@@ -1,4 +1,4 @@
-// ─── lumina-cli / logger ──────────────────────────────────────────────────
+// ─── lumi-cli / logger ──────────────────────────────────────────────────
 
 import { writeln, write, c as colors } from '../ansi.js';
 

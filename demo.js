@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// ─── lumina-cli demo ──────────────────────────────────────────────────────
+// ─── lumi-cli demo ──────────────────────────────────────────────────────
 
 import {
   banner, divider, header, badge,
@@ -18,7 +18,7 @@ const pause = (ms) => slow ? sleep(ms) : sleep(Math.min(ms, 60));
 // ─── Section runners ──────────────────────────────────────────────────────
 
 async function demoBanner() {
-  banner('LUMINA', { color: 'chalk', char: '█', align: 'center' });
+  banner('lumi', { color: 'chalk', char: '█', align: 'center' });
   writeln(`${c.slate}  terminal ui toolkit · v1.0.0 · zero dependencies${c.r}`);
   writeln();
   await pause(400);
@@ -156,7 +156,7 @@ async function demoBoxes() {
 
   box(
     [
-      `${c.chalk}${c.b}lumina-cli${c.r}`,
+      `${c.chalk}${c.b}lumi-cli${c.r}`,
       '',
       `${c.fog}Terminal UI components with a consistent`,
       `color palette and zero runtime dependencies.${c.r}`,
@@ -182,7 +182,7 @@ async function demoTable() {
   header('table');
 
   table([
-    { package: 'lumina-cli',   version: '1.0.0',  size: '~30KB', deps: 0, license: 'MIT' },
+    { package: 'lumi-cli',   version: '1.0.0',  size: '~30KB', deps: 0, license: 'MIT' },
     { package: 'chalk',        version: '5.3.0',  size: '8.2KB', deps: 0, license: 'MIT' },
     { package: 'ora',          version: '8.1.0',  size: '11KB',  deps: 5, license: 'MIT' },
     { package: 'cli-progress', version: '3.12.0', size: '18KB',  deps: 1, license: 'MIT' },
@@ -239,7 +239,7 @@ async function demo() {
   // Closing
   divider();
   banner('DONE', { color: 'sage', align: 'center' });
-  writeln(`${c.slate}  npm install lumina-cli${c.r}`);
+  writeln(`${c.slate}  npm install lumi-cli${c.r}`);
   writeln(`${c.graphite}  github.com/nijil71/Lumi${c.r}`);
   writeln();
 

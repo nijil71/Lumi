@@ -1,9 +1,9 @@
-# lumina-cli
+# lumi-cli
 
 Terminal UI components — spinners, progress bars, boxes, tables, banners — with zero runtime dependencies.
 
 ```
-npm install lumina-cli
+npm install lumi-cli
 ```
 
 > **Node.js ≥ 18** required. Pure ESM — no CommonJS export.
@@ -13,10 +13,10 @@ npm install lumina-cli
 ## Install & run
 
 ```bash
-npm install lumina-cli
+npm install lumi-cli
 
 # see everything in action
-npx lumina demo
+npx lumi demo
 ```
 
 ---
@@ -24,13 +24,13 @@ npx lumina demo
 ## Usage
 
 ```js
-import { spinner, progressBar, box, table, banner, log } from 'lumina-cli';
+import { spinner, progressBar, box, table, banner, log } from 'lumi-cli';
 ```
 
 ### Spinners
 
 ```js
-import { Spinner } from 'lumina-cli';
+import { Spinner } from 'lumi-cli';
 
 const sp = new Spinner({ type: 'braille', text: 'Compiling...', color: 'azure' });
 sp.start();
@@ -49,7 +49,7 @@ const sp = new Spinner({ text: 'Building', elapsed: true });
 **Wrap a promise:**
 
 ```js
-import { Spinner } from 'lumina-cli';
+import { Spinner } from 'lumi-cli';
 
 await Spinner.promise(fetchData(), { text: 'Fetching data...', color: 'sage' });
 ```
@@ -57,7 +57,7 @@ await Spinner.promise(fetchData(), { text: 'Fetching data...', color: 'sage' });
 **Run multiple spinners simultaneously:**
 
 ```js
-import { MultiSpinner } from 'lumina-cli';
+import { MultiSpinner } from 'lumi-cli';
 
 const multi = new MultiSpinner();
 const a = multi.add({ type: 'braille', text: 'Compiling',  color: 'azure' });
@@ -92,7 +92,7 @@ multi.stop();
 ### Progress bars
 
 ```js
-import { ProgressBar } from 'lumina-cli';
+import { ProgressBar } from 'lumi-cli';
 
 const bar = new ProgressBar({
   total: 100,
@@ -112,7 +112,7 @@ bar.complete('Upload done');
 **Multiple bars at once:**
 
 ```js
-import { MultiBar } from 'lumina-cli';
+import { MultiBar } from 'lumi-cli';
 
 const mb = new MultiBar();
 const a = mb.add({ total: 100, style: 'block',  label: 'kernel.img' });
@@ -129,9 +129,9 @@ mb.stop();
 ### Boxes
 
 ```js
-import { box } from 'lumina-cli';
+import { box } from 'lumi-cli';
 
-box('Hello from lumina.', {
+box('Hello from lumi.', {
   border:  'single',   // single | double | rounded | thick | dashed | ascii
   color:   'chalk',
   title:   'NOTE',
@@ -147,7 +147,7 @@ box('Hello from lumina.', {
 ### Tables
 
 ```js
-import { table } from 'lumina-cli';
+import { table } from 'lumi-cli';
 
 table([
   { name: 'alpha', version: '1.0.0', status: 'stable' },
@@ -166,7 +166,7 @@ table([
 Block-letter ASCII art using a custom 5×5 glyph set. Supports A–Z, 0–9, and basic punctuation.
 
 ```js
-import { banner, divider, header, badge } from 'lumina-cli';
+import { banner, divider, header, badge } from 'lumi-cli';
 
 banner('DONE', { color: 'sage', align: 'center' });
 
@@ -182,7 +182,7 @@ console.log(`Release ${badge('v1.0.0', { type: 'success' })} is live`);
 ### Logger
 
 ```js
-import { log, createLogger } from 'lumina-cli';
+import { log, createLogger } from 'lumi-cli';
 
 log.info('Server starting');
 log.success('Listening on :3000');
@@ -222,7 +222,7 @@ api.info('Request received');
 Access palette colors for custom output:
 
 ```js
-import { c, writeln } from 'lumina-cli';
+import { c, writeln } from 'lumi-cli';
 
 writeln(`${c.signal}${c.b}CRITICAL${c.r} ${c.fog}something went wrong${c.r}`);
 writeln(`${c.sage}✔${c.r} all systems nominal`);
@@ -245,7 +245,7 @@ writeln(`${c.sage}✔${c.r} all systems nominal`);
 
 ## Why this instead of chalk + ora + boxen?
 
-| | lumina-cli | chalk+ora+boxen+cli-progress |
+| | lumi-cli | chalk+ora+boxen+cli-progress |
 |---|---|---|
 | Install size | ~30KB | ~150KB+ |
 | Dependencies | 0 | 15+ transitive |
@@ -256,18 +256,18 @@ writeln(`${c.sage}✔${c.r} all systems nominal`);
 | Banner art | ✔ custom glyphs | figlet (separate) |
 | Consistent palette | ✔ shared | DIY |
 
-Trade-offs: lumina-cli is opinionated — one palette, one style system. If you need full Figlet font support, 16M color pickers, or complex table layouts, use the dedicated packages.
+Trade-offs: lumi-cli is opinionated — one palette, one style system. If you need full Figlet font support, 16M color pickers, or complex table layouts, use the dedicated packages.
 
 ---
 
 ## CLI
 
 ```bash
-npx lumina demo           # run full showcase
-npx lumina demo spinners  # just spinners
-npx lumina demo progress  # just progress bars
-npx lumina --version
-npx lumina --help
+npx lumi demo           # run full showcase
+npx lumi demo spinners  # just spinners
+npx lumi demo progress  # just progress bars
+npx lumi --version
+npx lumi --help
 ```
 
 ---

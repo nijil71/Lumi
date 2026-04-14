@@ -1,5 +1,5 @@
 {
-  "name": "lumina-cli",
+  "name": "lumi-cli",
   "version": "1.0.0",
   "description": "Terminal UI components — spinners, progress bars, boxes, tables, banners — zero dependencies",
   "type": "module",
@@ -12,7 +12,7 @@
     }
   },
   "bin": {
-    "lumina": "./src/cli.js"
+    "lumi": "./src/cli.js"
   },
   "files": [
     "src",

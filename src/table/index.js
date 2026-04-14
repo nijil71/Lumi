@@ -1,4 +1,4 @@
-// ─── lumina-cli / table ────────────────────────────────────────────────────
+// ─── lumi-cli / table ────────────────────────────────────────────────────
 
 import { writeln, c as colors, cols, visibleLen, stripAnsi, truncate, getColorTheme } from '../ansi.js';
 

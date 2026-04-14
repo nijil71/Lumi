@@ -1,4 +1,4 @@
-// ─── lumina-cli / spinners ────────────────────────────────────────────────
+// ─── lumi-cli / spinners ────────────────────────────────────────────────
 
 import { write, writeln, ansi, c as colors, isTTY, getColorTheme } from '../ansi.js';
 

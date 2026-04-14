@@ -1,4 +1,4 @@
-# Contributing to lumina-cli
+# Contributing to lumi-cli
 
 Thanks for your interest in contributing.
 

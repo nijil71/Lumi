@@ -1,4 +1,4 @@
-// ─── lumina-cli / box ─────────────────────────────────────────────────────
+// ─── lumi-cli / box ─────────────────────────────────────────────────────
 
 import { writeln, c as colors, cols, padEnd, visibleLen, stripAnsi, getColorTheme } from '../ansi.js';
 

@@ -1,4 +1,4 @@
-// ─── lumina-cli / progress ─────────────────────────────────────────────────
+// ─── lumi-cli / progress ─────────────────────────────────────────────────
 
 import { write, writeln, ansi, c as colors, cols, stripAnsi, isTTY, getColorTheme } from '../ansi.js';
 

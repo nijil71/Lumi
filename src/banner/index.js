@@ -1,4 +1,4 @@
-// ─── lumina-cli / banner ──────────────────────────────────────────────────
+// ─── lumi-cli / banner ──────────────────────────────────────────────────
 // Custom 5-row block letterforms — original glyph design
 
 import { writeln, c as colors, cols, getColorTheme } from '../ansi.js';

@@ -72,7 +72,7 @@ export function colorLevel() {
   return 3;
 }
 
-// ─── Lumina palette ───────────────────────────────────────────────────────
+// ─── lumi palette ───────────────────────────────────────────────────────
 
 function buildPalette() {
   const level = colorLevel();
