@@ -1,0 +1,37 @@
+{
+  "name": "lumina-cli",
+  "version": "1.0.0",
+  "description": "A strikingly beautiful terminal UI toolkit â€” Swiss precision meets raw brutalism",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "bin": {
+    "lumina": "./src/cli.js"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "demo.js"
+  ],
+  "scripts": {
+    "demo": "node demo.js",
+    "smoke": "node --test test/smoke.test.js",
+    "test": "npm run smoke"
+  },
+  "keywords": [
+    "cli",
+    "terminal",
+    "spinner",
+    "progress",
+    "ui",
+    "beautiful",
+    "tui"
+  ],
+  "author": "Nijil N M <nmnijilkhan@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
