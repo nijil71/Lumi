@@ -1,11 +1,15 @@
 {
   "name": "lumina-cli",
   "version": "1.0.0",
-  "description": "A strikingly beautiful terminal UI toolkit â€” Swiss precision meets raw brutalism",
+  "description": "Terminal UI components — spinners, progress bars, boxes, tables, banners — zero dependencies",
   "type": "module",
   "main": "./src/index.js",
+  "types": "./src/types.d.ts",
   "exports": {
-    ".": "./src/index.js"
+    ".": {
+      "types": "./src/types.d.ts",
+      "default": "./src/index.js"
+    }
   },
   "bin": {
     "lumina": "./src/cli.js"
@@ -13,6 +17,7 @@
   "files": [
     "src",
     "README.md",
+    "CHANGELOG.md",
     "demo.js"
   ],
   "scripts": {
@@ -20,14 +25,28 @@
     "smoke": "node --test test/smoke.test.js",
     "test": "npm run smoke"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nijil71/Lumi.git"
+  },
+  "homepage": "https://github.com/nijil71/Lumi#readme",
+  "bugs": {
+    "url": "https://github.com/nijil71/Lumi/issues"
+  },
   "keywords": [
     "cli",
     "terminal",
     "spinner",
     "progress",
-    "ui",
-    "beautiful",
-    "tui"
+    "progress-bar",
+    "box",
+    "table",
+    "banner",
+    "ascii-art",
+    "logger",
+    "tui",
+    "ansi",
+    "zero-dependency"
   ],
   "author": "Nijil N M <nmnijilkhan@gmail.com>",
   "license": "MIT",

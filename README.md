@@ -1,308 +1,279 @@
 # lumina-cli
 
-**A strikingly beautiful terminal UI toolkit for Node.js.**  
-Swiss precision · Bauhaus-meets-brutalism · Zero dependencies
+Terminal UI components — spinners, progress bars, boxes, tables, banners — with zero runtime dependencies.
 
 ```
 npm install lumina-cli
 ```
 
-For local development in this folder:
+> **Node.js ≥ 18** required. Pure ESM — no CommonJS export.
+
+---
+
+## Install & run
 
 ```bash
-npm test
-npm run demo
+npm install lumina-cli
+
+# see everything in action
+npx lumina demo
 ```
 
 ---
 
-## philosophy
-
-Most terminal libraries try to replicate web UIs in a character grid. Lumina doesn't.
-
-It takes inspiration from Swiss grid systems and IBM technical documentation — monochromatic precision, purposeful use of color, typographic hierarchy that works at 80 columns or 240. No gradients, no glow, no themes. Just ink, paper, and the occasional signal color that means something.
-
----
-
-## what's inside
-
-```
-lumina-cli
-├── spinners     12 handcrafted loading animations
-├── progress     6 progress bar styles + multi-bar
-├── banner       handcrafted 5-row ASCII font, dividers, headers, badges
-├── box          5 border styles for structured content
-├── table        data table renderer
-└── logger       structured log output with prefixes, kv pairs, step sequences
-```
-
----
-
-## quick start
+## Usage
 
 ```js
-import { spinner, banner, log, box, table, progressBar } from 'lumina-cli';
+import { spinner, progressBar, box, table, banner, log } from 'lumina-cli';
+```
 
-// banner
-banner('LUMINA', { color: 'chalk', align: 'center' });
+### Spinners
 
-// logger
-log.info('Initializing...');
-log.success('Connected to database');
-log.warn('Memory at 78%');
-log.error('Connection refused');
+```js
+import { Spinner } from 'lumina-cli';
 
-// spinner
-const sp = spinner({ type: 'braille', text: 'Compiling...', color: 'azure' });
+const sp = new Spinner({ type: 'braille', text: 'Compiling...', color: 'azure' });
 sp.start();
-await doWork();
+// ... do work ...
 sp.succeed('Compiled in 1.2s');
-
-// progress
-const bar = progressBar({ total: 100, style: 'bracket', color: 'lavender', label: 'uploading' });
-bar.start();
-bar.update(50);
-bar.complete('Upload done');
-
-// box
-box('Hello from lumina.', { border: 'thick', color: 'chalk', title: 'NOTE' });
-
-// table
-table([
-  { name: 'alpha', version: '1.0.0', status: 'stable' },
-  { name: 'beta',  version: '2.1.3', status: 'rc' },
-]);
 ```
 
----
+End states: `sp.succeed(text)`, `sp.fail(text)`, `sp.warn(text)`, `sp.info(text)`.
 
-## spinners
-
-12 unique, handcrafted animation sequences. Each has its own rhythm and personality.
-
-| name | character | feel |
-|------|-----------|------|
-| `braille` | ⠋⠙⠹⠸⠼⠴⠦ | classic, refined |
-| `block` | ▏▎▍▌▋▊▉█ | brutalist, architectural |
-| `dash` | ▰▱▱▱▱▱▱ | horizontal rhythm |
-| `orbital` | ◜◝◞◟ | circular, clean |
-| `pulse` | ·•●◉● | slow breath, alive |
-| `grid` | ⣾⣽⣻⢿⡿⣟ | IBM heritage |
-| `triangle` | ◢◣◤◥ | sharp, angular |
-| `snake` | ⠁⠂⠄⡀⢀⠠ | hypnotic river |
-| `signal` | · ·· ··· | morse, radio tower |
-| `cross` | ┼╋┿╈╉╊ | swiss grid |
-| `morph` | ◰◳◲◱ | shape-shifts |
-| `clock` | 🕛🕐🕑🕒 | precise |
+**Elapsed time** — shows how long the spinner has been running:
 
 ```js
-import { Spinner, MultiSpinner } from 'lumina-cli';
+const sp = new Spinner({ text: 'Building', elapsed: true });
+```
 
-// single spinner
-const sp = new Spinner({ type: 'dash', text: 'Loading', color: 'azure' });
-sp.start();
-sp.succeed('Done');     // ✔
-sp.fail('Failed');      // ✘
-sp.warn('Partial');     // ⚠
-sp.info('Note');        // ℹ
+**Wrap a promise:**
 
-// multiple spinners simultaneously
+```js
+import { Spinner } from 'lumina-cli';
+
+await Spinner.promise(fetchData(), { text: 'Fetching data...', color: 'sage' });
+```
+
+**Run multiple spinners simultaneously:**
+
+```js
+import { MultiSpinner } from 'lumina-cli';
+
 const multi = new MultiSpinner();
-const a = multi.add({ type: 'braille', text: 'Compiling',  color: 'azure'    });
+const a = multi.add({ type: 'braille', text: 'Compiling',  color: 'azure' });
 const b = multi.add({ type: 'dash',    text: 'Bundling',   color: 'lavender' });
-const c = multi.add({ type: 'pulse',   text: 'Uploading',  color: 'sage'     });
 multi.start();
-// ... resolve them at different times
+
+// resolve independently
 multi.succeed(a, 'Compiled — 0 errors');
 multi.fail(b, '3 bundle warnings');
-multi.succeed(c, 'Upload complete');
 multi.stop();
 ```
 
-**Available colors:** `chalk` · `signal` · `sage` · `azure` · `amber` · `lavender` · `dim`
+**12 spinner types:**
+
+| name | frames | interval |
+|------|--------|----------|
+| `braille` | ⠋⠙⠹⠸⠼⠴⠦ | 80ms |
+| `block` | ▏▎▍▌▋▊▉█ | 120ms |
+| `dash` | ▰▱▱▱ → ▰▰▰▰ | 90ms |
+| `orbital` | ◜◝◞◟ | 100ms |
+| `pulse` | ·•●◉●•· | 180ms |
+| `grid` | ⣾⣽⣻⢿⡿⣟ | 130ms |
+| `triangle` | ◢◣◤◥ | 100ms |
+| `snake` | ⠁⠂⠄⡀⢀⠠ | 70ms |
+| `signal` | · ·· ··· | 200ms |
+| `cross` | ┼╋┿╈╉╊ | 150ms |
+| `morph` | ◰◳◲◱ | 150ms |
+| `clock` | 🕛🕐🕑🕒 | 100ms |
 
 ---
 
-## progress bars
-
-6 distinct styles. Each maps to a different visual vocabulary.
-
-| style | character | personality |
-|-------|-----------|-------------|
-| `block` | █░ | solid, classic |
-| `shaded` | ▓░ | softer graduation |
-| `bracket` | [──▶ ] | swiss precision |
-| `thin` | ▬▶╌ | minimal, elegant |
-| `brutalist` | ▐■□▌ | raw, architectural |
-| `dots` | ●○ | playful grid |
+### Progress bars
 
 ```js
-import { ProgressBar, MultiBar } from 'lumina-cli';
+import { ProgressBar } from 'lumina-cli';
 
 const bar = new ProgressBar({
-  total:  100,
-  style:  'bracket',     // block | shaded | bracket | thin | brutalist | dots
-  color:  'azure',       // chalk | signal | sage | azure | amber | lavender
-  label:  'kernel.img',
-  width:  80,            // defaults to terminal width
+  total: 100,
+  style: 'bracket',   // block | shaded | bracket | thin | brutalist | dots
+  color: 'azure',     // chalk | signal | sage | azure | amber | lavender
+  label: 'uploading',
+  eta:   true,         // show estimated time remaining
+  rate:  true,         // show items/sec
 });
 
 bar.start();
-bar.update(50, 'halfway there');
+bar.update(50);
 bar.increment(10);
-bar.complete('Done!');
+bar.complete('Upload done');
+```
 
-// multiple bars
+**Multiple bars at once:**
+
+```js
+import { MultiBar } from 'lumina-cli';
+
 const mb = new MultiBar();
-const b0 = mb.add({ total: 100, style: 'block',  color: 'azure',    label: 'file-a' });
-const b1 = mb.add({ total: 200, style: 'shaded', color: 'lavender', label: 'file-b' });
+const a = mb.add({ total: 100, style: 'block',  label: 'kernel.img' });
+const b = mb.add({ total: 200, style: 'shaded', label: 'assets.tar' });
 mb.start();
-mb.update(b0, 60);
-mb.update(b1, 140);
-mb.tick();   // re-render
+mb.update(a, 60);
+mb.update(b, 140);
+mb.tick();
 mb.stop();
 ```
 
 ---
 
-## banner
-
-Handcrafted 5-row block letterforms (original design, not figlet). Supports A–Z, 0–9, and common punctuation.
-
-```js
-import { banner, divider, header, badge } from 'lumina-cli';
-
-banner('DONE', { color: 'sage', align: 'center' });
-// align: 'left' | 'center' | 'right'
-// color: 'chalk' | 'signal' | 'sage' | 'azure' | 'amber' | 'lavender' | 'dim'
-// char:  '█' (default) — any character works: '#', '▓', '*', ...
-
-divider({ label: 'SECTION', char: '─' });
-// ─────────────────── SECTION ───────────────────
-
-header('logging', 'structured output at a glance');
-// bold title + subtitle + thin rule
-
-const b = badge('v1.0.0', { type: 'success' });
-// type: 'default' | 'success' | 'error' | 'warning' | 'info'
-console.log(`Release ${b} is live`);
-```
-
----
-
-## box
+### Boxes
 
 ```js
 import { box } from 'lumina-cli';
 
-box('Simple content.', {
+box('Hello from lumina.', {
   border:  'single',   // single | double | rounded | thick | dashed | ascii
-  color:   'chalk',    // chalk | signal | sage | azure | amber | lavender | dim
-  title:   'TITLE',    // optional title in top border
-  footer:  'metadata', // optional footer row
-  padding: 1,          // inner horizontal padding
-  width:   60,         // defaults to terminal width
+  color:   'chalk',
+  title:   'NOTE',
+  footer:  'v1.0.0',
+  padding: 1,
+  width:   60,
+  align:   'left',     // left | center | right
 });
-
-// multi-line content
-box([
-  `${c.b}Bold heading${c.r}`,
-  '',
-  `${c.fog}Body text here.${c.r}`,
-], { border: 'thick', color: 'signal', title: 'ALERT' });
 ```
 
 ---
 
-## table
+### Tables
 
 ```js
 import { table } from 'lumina-cli';
 
 table([
-  { package: 'lumina-cli', version: '1.0.0', deps: 0 },
-  { package: 'chalk',      version: '5.3.0', deps: 0 },
+  { name: 'alpha', version: '1.0.0', status: 'stable' },
+  { name: 'beta',  version: '2.1.3', status: 'rc' },
 ], {
-  border:  'single',   // single | thick | double | minimal
-  color:   'default',  // default | signal | azure
-  headers: ['package', 'version', 'deps'],  // optional — inferred from data keys
+  border: 'single',    // single | thick | double | minimal
+  align: { version: 'right' },  // per-column alignment
+  maxWidth: { name: 20 },       // truncate long values
 });
 ```
 
 ---
 
-## logger
+### Banner
+
+Block-letter ASCII art using a custom 5×5 glyph set. Supports A–Z, 0–9, and basic punctuation.
+
+```js
+import { banner, divider, header, badge } from 'lumina-cli';
+
+banner('DONE', { color: 'sage', align: 'center' });
+
+divider({ label: 'SECTION', char: '─' });
+
+header('logging', 'structured output');
+
+console.log(`Release ${badge('v1.0.0', { type: 'success' })} is live`);
+```
+
+---
+
+### Logger
 
 ```js
 import { log, createLogger } from 'lumina-cli';
 
-// global logger
 log.info('Server starting');
 log.success('Listening on :3000');
 log.warn('High memory usage');
 log.error('Unhandled rejection');
 log.debug('Event loop lag: 2ms');
 
-// named logger with timestamps
-const syslog = createLogger({ prefix: 'api', timestamps: true });
-syslog.info('Request received');
-
-// key-value pairs (great for env dumps)
-log.kv('NODE_ENV',  'production');
-log.kv('PORT',      '3000');
-log.kv('DB_HOST',   'postgres://localhost/mydb');
+// key-value pairs
+log.kv('NODE_ENV', 'production');
+log.kv('PORT',     '3000');
 
 // step sequences
 log.step(1, 8, 'Checkout repository');
 log.step(2, 8, 'Install dependencies');
 
-// blank line
-log.br();
+// named logger with timestamps
+const api = createLogger({ prefix: 'api', timestamps: true });
+api.info('Request received');
 ```
 
 ---
 
-## color palette
+## Colors
 
-The Lumina palette is Bauhaus-inspired: neutrals are the foundation, signal colors are used with restraint.
+7 named colors used across all components:
 
-```
-neutrals  ink → carbon → graphite → slate → mist → fog → chalk → white
-signals   signal (red) · amber (warning) · sage (success) · azure (info) · lavender (accent)
-```
+| name | use |
+|------|-----|
+| `chalk` | default text, high contrast |
+| `signal` | errors, critical alerts |
+| `sage` | success states |
+| `azure` | info, links, active state |
+| `amber` | warnings |
+| `lavender` | accents, secondary actions |
+| `dim` | muted, disabled |
 
-Access palette colors directly for custom output:
+Access palette colors for custom output:
 
 ```js
 import { c, writeln } from 'lumina-cli';
 
 writeln(`${c.signal}${c.b}CRITICAL${c.r} ${c.fog}something went wrong${c.r}`);
-writeln(`${c.sage}✔${c.r} ${c.chalk}all systems nominal${c.r}`);
-writeln(`${c.slate}${c.dim}verbose: 0 errors, 0 warnings${c.r}`);
+writeln(`${c.sage}✔${c.r} all systems nominal`);
 ```
 
 ---
 
-## run the demo
+## Terminal behavior
+
+**Non-TTY mode**: When stdout isn't a terminal (piped, redirected, CI), interactive components degrade gracefully:
+- Spinners print the final state only (no animation)
+- Progress bars print at 25%, 50%, 75%, 100% instead of animating
+- Colors are stripped
+
+**NO_COLOR**: Set `NO_COLOR=1` to disable all color output ([no-color.org](https://no-color.org/)). Also respects `FORCE_COLOR` to override detection.
+
+**Ctrl+C safety**: Spinners and progress bars restore the cursor on SIGINT — no more invisible cursors after cancellation.
+
+---
+
+## Why this instead of chalk + ora + boxen?
+
+| | lumina-cli | chalk+ora+boxen+cli-progress |
+|---|---|---|
+| Install size | ~30KB | ~150KB+ |
+| Dependencies | 0 | 15+ transitive |
+| Spinners | ✔ built-in | ora (separate) |
+| Progress | ✔ built-in | cli-progress (separate) |
+| Boxes | ✔ built-in | boxen (separate) |
+| Tables | ✔ built-in | cli-table3 (separate) |
+| Banner art | ✔ custom glyphs | figlet (separate) |
+| Consistent palette | ✔ shared | DIY |
+
+Trade-offs: lumina-cli is opinionated — one palette, one style system. If you need full Figlet font support, 16M color pickers, or complex table layouts, use the dedicated packages.
+
+---
+
+## CLI
 
 ```bash
-npm run demo
-```
-
-Runs a ~50s showcase of every component: banners, all 12 spinners, multi-spinner, all 6 progress styles, multi-bar, boxes, tables, key-value logs, and a CI/CD pipeline simulation.
-
----
-
-## cli
-
-```bash
-lumina --help
-lumina demo
-lumina --version
+npx lumina demo           # run full showcase
+npx lumina demo spinners  # just spinners
+npx lumina demo progress  # just progress bars
+npx lumina --version
+npx lumina --help
 ```
 
 ---
 
-## license
+## License
 
 MIT
+```
+

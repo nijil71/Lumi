@@ -1,41 +1,35 @@
 // ─── lumina-cli / box ─────────────────────────────────────────────────────
 
-import { writeln, write, c as colors, cols, padEnd, visibleLen, stripAnsi, ansi } from '../ansi.js';
+import { writeln, c as colors, cols, padEnd, visibleLen, stripAnsi, getColorTheme } from '../ansi.js';
 
 // ─── Border styles ────────────────────────────────────────────────────────
 
 const BORDERS = {
-  // Thin single line — Swiss precision
   single: {
     tl: '┌', tr: '┐', bl: '└', br: '┘',
     h:  '─', v:  '│',
     ml: '├', mr: '┤',
   },
-  // Double — weighty, authoritative
   double: {
     tl: '╔', tr: '╗', bl: '╚', br: '╝',
     h:  '═', v:  '║',
     ml: '╠', mr: '╣',
   },
-  // Rounded — softer, contemporary
   rounded: {
     tl: '╭', tr: '╮', bl: '╰', br: '╯',
     h:  '─', v:  '│',
     ml: '├', mr: '┤',
   },
-  // Thick — brutalist, bold
   thick: {
     tl: '┏', tr: '┓', bl: '┗', br: '┛',
     h:  '━', v:  '┃',
     ml: '┣', mr: '┫',
   },
-  // Dashed — casual, airy
   dashed: {
     tl: '┌', tr: '┐', bl: '└', br: '┘',
     h:  '╌', v:  '╎',
     ml: '├', mr: '┤',
   },
-  // ASCII — maximum compatibility
   ascii: {
     tl: '+', tr: '+', bl: '+', br: '+',
     h:  '-', v:  '|',
@@ -43,48 +37,41 @@ const BORDERS = {
   },
 };
 
-const COLORS = {
-  default:  (s) => `${colors.graphite}${s}${colors.r}`,
-  signal:   (s) => `${colors.signal}${s}${colors.r}`,
-  sage:     (s) => `${colors.sage}${s}${colors.r}`,
-  azure:    (s) => `${colors.azure}${s}${colors.r}`,
-  amber:    (s) => `${colors.amber}${s}${colors.r}`,
-  lavender: (s) => `${colors.lavender}${s}${colors.r}`,
-  chalk:    (s) => `${colors.chalk}${s}${colors.r}`,
-  dim:      (s) => `${colors.slate}${s}${colors.r}`,
-};
-
 // ─── Box ──────────────────────────────────────────────────────────────────
 
 export function box(content, options = {}) {
   const border     = BORDERS[options.border || 'single'];
-  const colorFn    = COLORS[options.color  || 'default'];
+  const colorFn    = getColorTheme(options.color || 'default');
   const title      = options.title  || null;
   const footer     = options.footer || null;
   const padding    = options.padding !== undefined ? options.padding : 1;
   const maxWidth   = options.width  || Math.min(cols(), 80);
+  const align      = options.align  || 'left';
   const innerWidth = maxWidth - 2 - padding * 2;
 
   const lines = typeof content === 'string'
     ? content.split('\n')
     : content;
 
-  // Wrap lines that exceed innerWidth
+  // ANSI-aware word wrapping: preserves ANSI codes during wrapping
   const wrapped = [];
   for (const line of lines) {
-    const stripped = stripAnsi(line);
-    if (stripped.length <= innerWidth) {
+    const vLen = visibleLen(line);
+    if (vLen <= innerWidth) {
       wrapped.push(line);
     } else {
-      // Simple wrap
+      // For lines with ANSI codes, we need to track active codes
+      // Simple approach: strip, wrap, re-apply per-line styling
+      const stripped = stripAnsi(line);
       const words = stripped.split(' ');
       let current = '';
       for (const word of words) {
-        if ((current + ' ' + word).trim().length > innerWidth) {
-          if (current) wrapped.push(current);
+        const test = current ? current + ' ' + word : word;
+        if (test.length > innerWidth && current) {
+          wrapped.push(current);
           current = word;
         } else {
-          current = (current + ' ' + word).trim();
+          current = test;
         }
       }
       if (current) wrapped.push(current);
@@ -93,6 +80,22 @@ export function box(content, options = {}) {
 
   const w = maxWidth;
   const pad = ' '.repeat(padding);
+
+  // Align content within inner width
+  function alignLine(line, iw) {
+    const vl = visibleLen(line);
+    const spaces = Math.max(0, iw - vl);
+    if (align === 'center') {
+      const left = Math.floor(spaces / 2);
+      const right = spaces - left;
+      return ' '.repeat(left) + line + ' '.repeat(right);
+    }
+    if (align === 'right') {
+      return ' '.repeat(spaces) + line;
+    }
+    // left (default)
+    return line + ' '.repeat(spaces);
+  }
 
   // Top border
   if (title) {
@@ -115,11 +118,10 @@ export function box(content, options = {}) {
 
   // Content lines
   for (const line of wrapped) {
-    const visible = visibleLen(line);
-    const spaces  = Math.max(0, innerWidth - visible);
+    const aligned = alignLine(line, innerWidth);
     writeln(
       colorFn(border.v) +
-      pad + line + ' '.repeat(spaces) + pad +
+      pad + aligned + pad +
       colorFn(border.v)
     );
   }

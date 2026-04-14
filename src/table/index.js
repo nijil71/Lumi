@@ -1,6 +1,6 @@
 // ─── lumina-cli / table ────────────────────────────────────────────────────
 
-import { writeln, c as colors, cols, visibleLen, stripAnsi, ansi } from '../ansi.js';
+import { writeln, c as colors, cols, visibleLen, stripAnsi, truncate, getColorTheme } from '../ansi.js';
 
 const BORDERS = {
   single: { tl:'┌',tr:'┐',bl:'└',br:'┘',h:'─',v:'│',ml:'├',mr:'┤',tm:'┬',bm:'┴',x:'┼' },
@@ -9,39 +9,54 @@ const BORDERS = {
   minimal:{ tl:'',tr:'',bl:'',br:'',h:'─',v:' ',ml:'',mr:'',tm:'',bm:'',x:'' },
 };
 
-const THEME = {
-  default:  (s) => `${colors.graphite}${s}${colors.r}`,
-  signal:   (s) => `${colors.signal}${s}${colors.r}`,
-  azure:    (s) => `${colors.azure}${s}${colors.r}`,
-};
-
 export function table(data, options = {}) {
   if (!data || data.length === 0) return;
 
-  const border   = BORDERS[options.border || 'single'];
-  const colorFn  = THEME[options.color || 'default'];
-  const headers  = options.headers || Object.keys(data[0]);
-  const maxW     = options.width   || cols();
+  const border     = BORDERS[options.border || 'single'];
+  const colorFn    = getColorTheme(options.color || 'default');
+  const headers    = options.headers || Object.keys(data[0]);
+  const maxW       = options.width   || cols();
+  const alignOpts  = options.align   || {};   // { columnName: 'right' | 'center' | 'left' }
+  const maxWidths  = options.maxWidth || {};   // { columnName: number }
 
   // Compute column widths
-  const colWidths = headers.map((h, ci) => {
+  const colWidths = headers.map((h) => {
     const dataMax = Math.max(...data.map(row => {
       const val = row[h] !== undefined ? String(row[h]) : '';
       return visibleLen(val);
     }));
-    return Math.max(visibleLen(h), dataMax);
+    let w = Math.max(visibleLen(h), dataMax);
+    // Apply max width constraint
+    if (maxWidths[h] && w > maxWidths[h]) {
+      w = maxWidths[h];
+    }
+    return w;
   });
 
-  // Pad each cell
-  const pad = (str, w) => {
+  // Pad/align a cell value
+  function alignCell(str, w, alignment) {
     const s = String(str ?? '');
-    return s + ' '.repeat(Math.max(0, w - visibleLen(s)));
-  };
+    // Truncate if exceeding max width
+    const vis = visibleLen(s);
+    const text = vis > w ? truncate(s, w) : s;
+    const vl = visibleLen(text);
+    const spaces = Math.max(0, w - vl);
+
+    if (alignment === 'right') {
+      return ' '.repeat(spaces) + text;
+    }
+    if (alignment === 'center') {
+      const left = Math.floor(spaces / 2);
+      const right = spaces - left;
+      return ' '.repeat(left) + text + ' '.repeat(right);
+    }
+    // left (default)
+    return text + ' '.repeat(spaces);
+  }
 
   const v = border.v;
-  const sep = ` ${v} `;
 
-  // Header row color
+  // Header color
   const hdrColor = (s) => `${colors.chalk}${colors.b}${s}${colors.r}`;
 
   // ── Top border ──
@@ -53,7 +68,10 @@ export function table(data, options = {}) {
   }
 
   // ── Header ──
-  const hdrCells = headers.map((h, i) => ` ${hdrColor(pad(h, colWidths[i]))} `);
+  const hdrCells = headers.map((h, i) => {
+    const aligned = alignCell(h, colWidths[i], alignOpts[h] || 'left');
+    return ` ${hdrColor(aligned)} `;
+  });
   writeln(colorFn(v) + hdrCells.join(colorFn(v)) + colorFn(v));
 
   // ── Header divider ──
@@ -74,7 +92,9 @@ export function table(data, options = {}) {
 
     const cells = headers.map((h, ci) => {
       const val = row[h] !== undefined ? String(row[h]) : '';
-      return ` ${rowBg}${colors.fog}${pad(val, colWidths[ci])}${colors.r} `;
+      const alignment = alignOpts[h] || 'left';
+      const aligned = alignCell(val, colWidths[ci], alignment);
+      return ` ${rowBg}${colors.fog}${aligned}${colors.r} `;
     });
     writeln(colorFn(v) + cells.join(colorFn(v)) + colorFn(v));
   }

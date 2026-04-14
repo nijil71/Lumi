@@ -1,6 +1,6 @@
 // ─── lumina-cli / logger ──────────────────────────────────────────────────
 
-import { writeln, write, c as colors, ansi } from '../ansi.js';
+import { writeln, write, c as colors } from '../ansi.js';
 
 const LEVELS = {
   info:    { symbol: 'ℹ', color: colors.azure,    label: 'info ' },

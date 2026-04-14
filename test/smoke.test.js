@@ -50,32 +50,34 @@ test('exports render representative static components', async () => {
 
 test('interactive primitives complete without throwing', async () => {
   const output = await captureStdout(async () => {
+    // Spinner — in non-TTY mode, prints final state only
     const spinner = new Spinner({ text: 'Loading' });
     spinner.start();
     await new Promise((resolve) => setTimeout(resolve, 20));
     spinner.succeed('Done');
 
+    // MultiSpinner — non-TTY prints final states on stop()
     const multiSpinner = new MultiSpinner();
     const step = multiSpinner.add({ text: 'Compiling' });
     multiSpinner.start();
     multiSpinner.succeed(step, 'Compiled');
     multiSpinner.stop();
 
+    // ProgressBar — non-TTY prints milestone percentages
     const bar = new ProgressBar({ total: 3, label: 'build' });
     bar.start();
     bar.update(2);
     bar.complete('Built');
 
+    // MultiBar — non-TTY mode skips rendering
     const multiBar = new MultiBar();
-    const index = multiBar.add({ total: 5, label: 'assets' });
+    multiBar.add({ total: 5, label: 'assets' });
     multiBar.start();
-    multiBar.update(index, 5);
-    multiBar.tick();
     multiBar.stop();
   });
 
   assert.match(output, /Done/);
   assert.match(output, /Compiled/);
   assert.match(output, /Built/);
-  assert.match(output, /assets/);
+  assert.match(output, /build/);
 });

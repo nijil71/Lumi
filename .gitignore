@@ -1,9 +1,6 @@
-# Dependencies
 node_modules/
-package-lock.json
-yarn.lock
 
-# Environment variables
+# Environment
 .env
 .env.local
 .env.*.local
@@ -13,39 +10,10 @@ yarn.lock
 .idea/
 *.swp
 *.swo
-*.swn
-*.sublime-project
-*.sublime-workspace
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Build outputs
-dist/
-build/
-out/
-
 # Logs
 *.log
-logs/
-
-# Temporary files
-*.tmp
-.cache/
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-.venv/
-venv/
-
-# Java
-*.class
-*.jar
-bin/
-target/
-
-# Git
-.git/

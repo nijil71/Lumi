@@ -1,53 +1,46 @@
 // ─── lumina-cli / progress ─────────────────────────────────────────────────
 
-import { write, ansi, c as colors, cols, padEnd, stripAnsi } from '../ansi.js';
+import { write, writeln, ansi, c as colors, cols, stripAnsi, isTTY, getColorTheme } from '../ansi.js';
 
 // ─── Progress bar styles ──────────────────────────────────────────────────
 
 const STYLES = {
-  // Solid block — classic but refined
   block: {
-    filled: '█',
-    empty:  '░',
-    head:   '█',
-    caps:   ['', ''],
+    filled: '█', empty: '░', head: '█', caps: ['', ''],
   },
-  // Shaded — softer graduation
   shaded: {
-    filled: '▓',
-    empty:  '░',
-    head:   '▓',
-    caps:   ['', ''],
+    filled: '▓', empty: '░', head: '▓', caps: ['', ''],
   },
-  // Bracket — Swiss precision
   bracket: {
-    filled: '─',
-    empty:  ' ',
-    head:   '▶',
-    caps:   ['[', ']'],
+    filled: '─', empty: ' ', head: '▶', caps: ['[', ']'],
   },
-  // Thin — minimal, elegant
   thin: {
-    filled: '▬',
-    empty:  '╌',
-    head:   '▶',
-    caps:   ['', ''],
+    filled: '▬', empty: '╌', head: '▶', caps: ['', ''],
   },
-  // Brutalist — raw bars
   brutalist: {
-    filled: '■',
-    empty:  '□',
-    head:   '■',
-    caps:   ['▐', '▌'],
+    filled: '■', empty: '□', head: '■', caps: ['▐', '▌'],
   },
-  // Dots — playful grid
   dots: {
-    filled: '●',
-    empty:  '○',
-    head:   '●',
-    caps:   ['', ''],
+    filled: '●', empty: '○', head: '●', caps: ['', ''],
   },
 };
+
+// ─── SIGINT cleanup registry ──────────────────────────────────────────────
+
+const activeInstances = new Set();
+let sigintBound = false;
+
+function ensureSigintHandler() {
+  if (sigintBound) return;
+  sigintBound = true;
+  process.on('SIGINT', () => {
+    for (const instance of activeInstances) {
+      if (typeof instance.stop === 'function') instance.stop();
+    }
+    write(ansi.show());
+    process.exit(130);
+  });
+}
 
 // ─── ProgressBar class ────────────────────────────────────────────────────
 
@@ -56,29 +49,49 @@ export class ProgressBar {
     this._total   = Math.max(1, options.total ?? 100);
     this._current = Math.max(0, options.current ?? 0);
     this._style   = STYLES[options.style || 'block'];
-    this._width   = options.width   || null;  // null = auto from terminal
+    this._width   = options.width   || null;
     this._label   = options.label   || '';
     this._color   = options.color   || 'azure';
+    this._showEta = options.eta     || false;
+    this._showRate = options.rate   || false;
     this._stream  = process.stdout;
     this._started = false;
+    this._startMs = null;
+    this._colorFn = getColorTheme(this._color);
 
-    this._colorFn = {
-      azure:    (s) => `${colors.azure}${s}${colors.r}`,
-      signal:   (s) => `${colors.signal}${s}${colors.r}`,
-      sage:     (s) => `${colors.sage}${s}${colors.r}`,
-      amber:    (s) => `${colors.amber}${s}${colors.r}`,
-      lavender: (s) => `${colors.lavender}${s}${colors.r}`,
-      chalk:    (s) => `${colors.chalk}${s}${colors.r}`,
-    }[this._color] || ((s) => s);
+    // Non-TTY: track which percentage milestones we've printed
+    this._printedMilestones = new Set();
   }
 
   _barWidth() {
     const terminal = this._width || cols();
     const labelLen = this._label ? stripAnsi(this._label).length + 1 : 0;
-    const pctLen   = 7; // ' 100% '
-    const numLen   = String(this._total).length * 2 + 3; // 'nnn/NNN '
+    const pctLen   = 7;
+    const numLen   = String(this._total).length * 2 + 3;
     const caps     = this._style.caps[0].length + this._style.caps[1].length;
-    return Math.max(1, terminal - labelLen - pctLen - numLen - caps - 2);
+    const etaLen   = this._showEta ? 10 : 0;
+    const rateLen  = this._showRate ? 12 : 0;
+    return Math.max(1, terminal - labelLen - pctLen - numLen - caps - etaLen - rateLen - 2);
+  }
+
+  _calcEta() {
+    if (!this._startMs || this._current === 0) return '';
+    const elapsed = Date.now() - this._startMs;
+    const rate = this._current / elapsed;
+    const remaining = (this._total - this._current) / rate;
+    if (remaining < 1000) return '<1s';
+    if (remaining < 60000) return `${Math.ceil(remaining / 1000)}s`;
+    return `${Math.floor(remaining / 60000)}m${Math.ceil((remaining % 60000) / 1000)}s`;
+  }
+
+  _calcRate() {
+    if (!this._startMs || this._current === 0) return '';
+    const elapsed = (Date.now() - this._startMs) / 1000;
+    if (elapsed === 0) return '';
+    const rate = this._current / elapsed;
+    if (rate >= 1000) return `${(rate / 1000).toFixed(1)}K/s`;
+    if (rate >= 1) return `${rate.toFixed(1)}/s`;
+    return `${(rate * 1000).toFixed(0)}ms/op`;
   }
 
   _render() {
@@ -100,13 +113,44 @@ export class ProgressBar {
     const numStr     = `${colors.slate}${String(this._current).padStart(String(this._total).length)}/${this._total}${colors.r}`;
     const label      = this._label ? `${colors.mist}${this._label}${colors.r} ` : '';
 
+    let suffix = '';
+    if (this._showEta && pct < 1) {
+      const eta = this._calcEta();
+      if (eta) suffix += ` ${colors.slate}ETA ${eta}${colors.r}`;
+    }
+    if (this._showRate) {
+      const rate = this._calcRate();
+      if (rate) suffix += ` ${colors.slate}${rate}${colors.r}`;
+    }
+
     write(ansi.col(1) + ansi.clearLine());
-    write(`${label}${coloredBar} ${pctStr} ${numStr}`);
+    write(`${label}${coloredBar} ${pctStr} ${numStr}${suffix}`);
+  }
+
+  _renderNonTTY() {
+    const pct = Math.round((this._current / this._total) * 100);
+    const milestones = [0, 25, 50, 75, 100];
+    for (const m of milestones) {
+      if (pct >= m && !this._printedMilestones.has(m)) {
+        this._printedMilestones.add(m);
+        const label = this._label ? `${this._label} ` : '';
+        writeln(`${label}${m}% (${this._current}/${this._total})`);
+      }
+    }
   }
 
   start() {
-    write(ansi.hide());
+    this._startMs = Date.now();
     this._started = true;
+
+    if (!isTTY()) {
+      this._renderNonTTY();
+      return this;
+    }
+
+    ensureSigintHandler();
+    activeInstances.add(this);
+    write(ansi.hide());
     write('\n');
     this._render();
     return this;
@@ -115,6 +159,11 @@ export class ProgressBar {
   update(current, label) {
     if (label !== undefined) this._label = label;
     this._current = Math.min(Math.max(0, current), this._total);
+
+    if (!isTTY()) {
+      this._renderNonTTY();
+      return this;
+    }
     this._render();
     return this;
   }
@@ -125,21 +174,42 @@ export class ProgressBar {
 
   complete(text) {
     this._current = this._total;
+
+    if (!isTTY()) {
+      if (!this._printedMilestones.has(100)) {
+        const label = this._label ? `${this._label} ` : '';
+        writeln(`${label}100% (${this._total}/${this._total})`);
+      }
+      if (text) writeln(`✔ ${text}`);
+      return;
+    }
+
     this._render();
     write('\n');
     if (text) {
       write(`${colors.sage}✔${colors.r} ${colors.chalk}${text}${colors.r}\n`);
     }
+    activeInstances.delete(this);
+    write(ansi.show());
+  }
+
+  /** Remove the progress bar line from the terminal */
+  clear() {
+    if (isTTY()) {
+      write(ansi.col(1) + ansi.clearLine());
+    }
+    activeInstances.delete(this);
     write(ansi.show());
   }
 
   stop() {
     write('\n');
+    activeInstances.delete(this);
     write(ansi.show());
   }
 }
 
-// ─── Multi-bar — render multiple progress bars simultaneously ─────────────
+// ─── Multi-bar ────────────────────────────────────────────────────────────
 
 export class MultiBar {
   constructor() {
@@ -170,6 +240,10 @@ export class MultiBar {
   }
 
   start() {
+    if (!isTTY()) return this;
+
+    ensureSigintHandler();
+    activeInstances.add(this);
     write(ansi.hide());
     for (let i = 0; i < this._bars.length; i++) write('\n');
     this._lines = this._bars.length;
@@ -178,12 +252,16 @@ export class MultiBar {
   }
 
   tick() {
+    if (!isTTY()) return this;
     this._renderAll();
     return this;
   }
 
   stop() {
-    this._renderAll();
+    if (isTTY()) {
+      this._renderAll();
+    }
+    activeInstances.delete(this);
     write(ansi.show());
   }
 }

@@ -1,6 +1,6 @@
 // ─── lumina-cli / spinners ────────────────────────────────────────────────
 
-import { write, ansi, c as colors } from '../ansi.js';
+import { write, writeln, ansi, c as colors, isTTY, getColorTheme } from '../ansi.js';
 
 export const SPINNERS = {
   braille:  { interval: 80,  frames: ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'] },
@@ -17,45 +17,70 @@ export const SPINNERS = {
   morph:    { interval: 150, frames: ['◰','◳','◲','◱'] },
 };
 
-function makeThemes() {
-  return {
-    default:  (f) => `${colors.chalk}${f}${colors.r}`,
-    chalk:    (f) => `${colors.chalk}${f}${colors.r}`,
-    signal:   (f) => `${colors.signal}${colors.b}${f}${colors.r}`,
-    sage:     (f) => `${colors.sage}${f}${colors.r}`,
-    azure:    (f) => `${colors.azure}${f}${colors.r}`,
-    amber:    (f) => `${colors.amber}${f}${colors.r}`,
-    lavender: (f) => `${colors.lavender}${f}${colors.r}`,
-    dim:      (f) => `${colors.slate}${f}${colors.r}`,
-  };
+// ─── SIGINT cleanup registry ──────────────────────────────────────────────
+// All active spinners register here so Ctrl+C restores the cursor.
+
+const activeInstances = new Set();
+let sigintBound = false;
+
+function ensureSigintHandler() {
+  if (sigintBound) return;
+  sigintBound = true;
+  process.on('SIGINT', () => {
+    for (const instance of activeInstances) {
+      instance.stop();
+    }
+    write(ansi.show());
+    process.exit(130);
+  });
 }
 
-function getTheme(name) {
-  const t = makeThemes();
-  return t[name] || t.default;
+function formatElapsed(ms) {
+  if (ms < 1000) return `${ms}ms`;
+  const s = (ms / 1000).toFixed(1);
+  return `${s}s`;
 }
+
+// ─── Spinner ──────────────────────────────────────────────────────────────
 
 export class Spinner {
   constructor(options = {}) {
     this._def     = SPINNERS[options.type || 'braille'] || SPINNERS.braille;
     this._text    = options.text   || '';
-    this._colorFn = getTheme(options.color || 'default');
+    this._colorFn = getColorTheme(options.color || 'default');
     this._frame   = 0;
     this._timer   = null;
     this._prefix  = options.prefix || '';
+    this._elapsed = options.elapsed || false;
+    this._startMs = null;
   }
 
   _render() {
     const frame   = this._def.frames[this._frame % this._def.frames.length];
     const spinner = this._colorFn(frame);
     const prefix  = this._prefix ? `${colors.slate}${colors.b}${this._prefix}${colors.r} ` : '';
-    const text    = this._text   ? ` ${colors.fog}${this._text}${colors.r}` : '';
+    let text    = this._text   ? ` ${colors.fog}${this._text}${colors.r}` : '';
+
+    if (this._elapsed && this._startMs) {
+      const elapsed = Date.now() - this._startMs;
+      text += ` ${colors.slate}${formatElapsed(elapsed)}${colors.r}`;
+    }
+
     write(ansi.col(1) + ansi.clearLine() + `${prefix}${spinner}${text}`);
     this._frame++;
   }
 
   start(text) {
     if (text !== undefined) this._text = text;
+    this._startMs = Date.now();
+
+    // Non-TTY: skip animation entirely
+    if (!isTTY()) {
+      return this;
+    }
+
+    ensureSigintHandler();
+    activeInstances.add(this);
     write(ansi.hide());
     this._timer = setInterval(() => this._render(), this._def.interval);
     this._render();
@@ -63,7 +88,7 @@ export class Spinner {
   }
 
   setText(t)     { this._text = t; return this; }
-  setColor(name) { this._colorFn = getTheme(name); return this; }
+  setColor(name) { this._colorFn = getColorTheme(name); return this; }
 
   succeed(text) { this._stop(`${colors.sage}✔${colors.r}`,   text || this._text); }
   fail(text)    { this._stop(`${colors.signal}✘${colors.r}`, text || this._text); }
@@ -72,15 +97,44 @@ export class Spinner {
 
   _stop(symbol, text) {
     clearInterval(this._timer);
-    write(ansi.col(1) + ansi.clearLine());
-    write(`${symbol} ${colors.chalk}${text}${colors.r}\n`);
+    activeInstances.delete(this);
+
+    let elapsed = '';
+    if (this._elapsed && this._startMs) {
+      elapsed = ` ${colors.slate}${formatElapsed(Date.now() - this._startMs)}${colors.r}`;
+    }
+
+    if (isTTY()) {
+      write(ansi.col(1) + ansi.clearLine());
+    }
+    write(`${symbol} ${colors.chalk}${text}${colors.r}${elapsed}\n`);
     write(ansi.show());
   }
 
   stop() {
     clearInterval(this._timer);
-    write(ansi.col(1) + ansi.clearLine());
+    activeInstances.delete(this);
+    if (isTTY()) {
+      write(ansi.col(1) + ansi.clearLine());
+    }
     write(ansi.show());
+  }
+
+  /**
+   * Wrap a promise — start spinner, resolve/reject, print result.
+   * Usage: await Spinner.promise(fetchData(), { text: 'Fetching...' })
+   */
+  static async promise(promise, options = {}) {
+    const sp = new Spinner(options);
+    sp.start();
+    try {
+      const result = await promise;
+      sp.succeed(options.successText || options.text || 'Done');
+      return result;
+    } catch (err) {
+      sp.fail(options.failText || err.message || 'Failed');
+      throw err;
+    }
   }
 }
 
@@ -88,6 +142,8 @@ export function spinner(textOrOptions) {
   if (typeof textOrOptions === 'string') return new Spinner({ text: textOrOptions });
   return new Spinner(textOrOptions);
 }
+
+// ─── MultiSpinner ─────────────────────────────────────────────────────────
 
 export class MultiSpinner {
   constructor() {
@@ -102,7 +158,7 @@ export class MultiSpinner {
       def:     SPINNERS[opts.type || 'braille'] || SPINNERS.braille,
       text:    opts.text || '',
       frame:   0,
-      colorFn: getTheme(opts.color || 'default'),
+      colorFn: getColorTheme(opts.color || 'default'),
       status:  'spinning',
       symbol:  null,
     });
@@ -138,6 +194,13 @@ export class MultiSpinner {
   }
 
   start() {
+    // Non-TTY: skip animation
+    if (!isTTY()) {
+      return this;
+    }
+
+    ensureSigintHandler();
+    activeInstances.add(this);
     write(ansi.hide());
     for (let i = 0; i < this._spinners.length; i++) write('\n');
     this._lines = this._spinners.length;
@@ -148,7 +211,17 @@ export class MultiSpinner {
 
   stop() {
     clearInterval(this._timer);
-    this._renderAll();
+    activeInstances.delete(this);
+
+    if (isTTY()) {
+      this._renderAll();
+    } else {
+      // Non-TTY: print final states
+      for (const s of this._spinners) {
+        const sym = s.symbol || (s.status === 'spinning' ? '·' : '✔');
+        writeln(`  ${sym} ${s.text}`);
+      }
+    }
     write(ansi.show());
   }
 }

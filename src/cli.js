@@ -11,19 +11,27 @@ async function getVersion() {
 
 function printHelp(version) {
   banner('LUMINA', { color: 'chalk', align: 'center' });
-  writeln(`${c.slate}terminal ui toolkit · v${version}${c.r}`);
-  writeln(`${c.graphite}zero runtime dependencies · pure node.js${c.r}`);
+  writeln(`${c.slate}  terminal ui toolkit · v${version}${c.r}`);
   writeln();
   divider({ label: 'COMMANDS' });
   writeln();
-  writeln(`${c.chalk}lumina demo${c.r}      run the interactive showcase`);
-  writeln(`${c.chalk}lumina --help${c.r}    show this help`);
-  writeln(`${c.chalk}lumina --version${c.r} print the package version`);
+  writeln(`  ${c.chalk}lumina demo${c.r}               run full showcase`);
+  writeln(`  ${c.chalk}lumina demo spinners${c.r}      just spinners`);
+  writeln(`  ${c.chalk}lumina demo progress${c.r}      just progress bars`);
+  writeln(`  ${c.chalk}lumina demo boxes${c.r}         just boxes`);
+  writeln(`  ${c.chalk}lumina demo table${c.r}         just table`);
+  writeln(`  ${c.chalk}lumina demo logger${c.r}        just logger`);
+  writeln(`  ${c.chalk}lumina demo badges${c.r}        just badges`);
+  writeln(`  ${c.chalk}lumina demo --slow${c.r}        presentation mode`);
+  writeln();
+  writeln(`  ${c.chalk}lumina --help${c.r}             show this help`);
+  writeln(`  ${c.chalk}lumina --version${c.r}          print version`);
   writeln();
 }
 
 async function main() {
-  const command = process.argv[2];
+  const args = process.argv.slice(2);
+  const command = args[0];
   const version = await getVersion();
 
   switch (command) {
@@ -38,9 +46,14 @@ async function main() {
     case '-v':
       process.stdout.write(`${version}\n`);
       return;
-    case 'demo':
+    case 'demo': {
+      // Pass remaining args to demo.js
+      const demoArgs = args.slice(1);
+      // Re-set process.argv so demo.js can read section names
+      process.argv = [process.argv[0], process.argv[1], ...demoArgs];
       await import('../demo.js');
       return;
+    }
     default:
       process.stderr.write(`Unknown command: ${command}\n`);
       process.stderr.write('Run "lumina --help" for usage.\n');

@@ -1,9 +1,9 @@
 // ─── lumina-cli ───────────────────────────────────────────────────────────
-// A strikingly beautiful terminal UI toolkit
-// Zero dependencies · Pure Node.js · Bauhaus meets raw brutalism
+// Terminal UI components — zero dependencies
 // ─────────────────────────────────────────────────────────────────────────
 
-export { ansi, c, write, writeln, cols, rows, stripAnsi, visibleLen, padEnd }
+export { ansi, c, write, writeln, cols, rows, stripAnsi, visibleLen, padEnd, truncate,
+         isTTY, colorLevel, getColorTheme }
   from './ansi.js';
 
 export { Spinner, MultiSpinner, spinner, SPINNERS }
