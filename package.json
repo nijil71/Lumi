@@ -1,6 +1,6 @@
 {
   "name": "@nijil71/lumi-cli",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Terminal UI components — spinners, progress bars, boxes, tables, banners — zero dependencies",
   "type": "module",
   "main": "./src/index.js",
