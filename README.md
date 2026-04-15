@@ -9,7 +9,7 @@
 
 Terminal UI toolkit for Node.js — spinners, progress bars, tables, boxes, banners, gradients, prompts, and more. Zero runtime dependencies.
 
-[![npm](https://img.shields.io/npm/v/lumi-cli?color=%236C47FF&style=flat-square&label=npm)](https://www.npmjs.com/package/lumi-cli)
+[![npm](https://img.shields.io/npm/v/@nijil71/lumi-cli?color=%236C47FF&style=flat-square&label=npm)](https://www.npmjs.com/package/@nijil71/lumi-cli)
 [![install size](https://img.shields.io/badge/install%20size-~30%20KB-brightgreen?style=flat-square)](https://packagephobia.com/result?p=lumi-cli)
 [![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen?style=flat-square)](https://www.npmjs.com/package/lumi-cli?activeTab=dependencies)
 [![node](https://img.shields.io/badge/node-%E2%89%A518-important?style=flat-square)](https://nodejs.org)
@@ -30,13 +30,13 @@ Runs without installing. Shows every component live in your terminal.
 ## Install
 
 ```bash
-npm install lumi-cli
+npm install @nijil71/lumi-cli
 ```
 
 > **Node.js ≥ 18** · Pure ESM · No CommonJS · No polyfills · No setup
 
 ```js
-import { spinner, ProgressBar, box, table, banner, log, gradient } from 'lumi-cli';
+import { spinner, ProgressBar, box, table, banner, log, gradient } from '@nijil71/lumi-cli';
 ```
 
 ---
@@ -65,7 +65,7 @@ lumi-cli
 ## Spinners
 
 ```js
-import { Spinner } from 'lumi-cli';
+import { Spinner } from '@nijil71/lumi-cli';
 
 const sp = new Spinner({ type: 'wave', text: 'Building…', color: 'azure', elapsed: true });
 sp.start();
@@ -88,7 +88,7 @@ await Spinner.promise(fetchData(), {
 **Run tasks in parallel:**
 
 ```js
-import { MultiSpinner } from 'lumi-cli';
+import { MultiSpinner } from '@nijil71/lumi-cli';
 
 const multi = new MultiSpinner();
 const a = multi.add({ type: 'braille', text: 'Compiling',  color: 'azure'    });
@@ -133,7 +133,7 @@ multi.stop();
 ## Progress bars
 
 ```js
-import { ProgressBar } from 'lumi-cli';
+import { ProgressBar } from '@nijil71/lumi-cli';
 
 const bar = new ProgressBar({
   total: 100,
@@ -153,7 +153,7 @@ bar.complete('Done'); // jump to 100% + print checkmark
 **Multiple bars:**
 
 ```js
-import { MultiBar } from 'lumi-cli';
+import { MultiBar } from '@nijil71/lumi-cli';
 
 const mb = new MultiBar();
 const a = mb.add({ total: 100, style: 'block',  label: 'kernel.img',    color: 'azure'    });
@@ -172,7 +172,7 @@ mb.stop();
 ## Boxes
 
 ```js
-import { box, columns } from 'lumi-cli';
+import { box, columns } from '@nijil71/lumi-cli';
 
 box('Hello from lumi.', {
   border:  'rounded',   // single | double | rounded | thick | dashed | ascii
@@ -210,7 +210,7 @@ columns([
 ## Table
 
 ```js
-import { table } from 'lumi-cli';
+import { table } from '@nijil71/lumi-cli';
 
 table([
   { name: 'alpha', version: '1.0.0', status: 'stable', size: '12 KB' },
@@ -229,13 +229,13 @@ table([
 Block-letter ASCII art — custom 5×5 glyph set, A–Z, 0–9, punctuation.
 
 ```js
-import { banner, divider, header, badge } from 'lumi-cli';
+import { banner, divider, header, badge } from '@nijil71/lumi-cli';
 
 // Flat color
 banner('LUMI', { color: 'lavender', align: 'center' });
 
 // Truecolor gradient
-import { GRADIENTS } from 'lumi-cli';
+import { GRADIENTS } from '@nijil71/lumi-cli';
 banner('LUMI', { gradient: GRADIENTS.neon, align: 'center' });
 
 divider({ label: 'SECTION' });
@@ -251,7 +251,7 @@ console.log(`Build ${badge('v1.0.0', { type: 'success' })} deployed`);
 ## Gradient
 
 ```js
-import { gradient, GRADIENTS, writeln } from 'lumi-cli';
+import { gradient, GRADIENTS, writeln } from '@nijil71/lumi-cli';
 
 // gradient(text, fromRGB, toRGB)
 writeln(gradient('Hello, terminal.', [108, 71, 255], [0, 201, 167]));
@@ -274,7 +274,7 @@ Gracefully falls back to unstyled text when the terminal doesn't support truecol
 ## Logger
 
 ```js
-import { log, createLogger } from 'lumi-cli';
+import { log, createLogger } from '@nijil71/lumi-cli';
 
 log.info('Server starting');
 log.success('Listening on :3000');
@@ -316,7 +316,7 @@ api.success('Response sent — 12ms');
 **Use palette directly in your own output:**
 
 ```js
-import { c, writeln } from 'lumi-cli';
+import { c, writeln } from '@nijil71/lumi-cli';
 
 writeln(`${c.signal}${c.b}CRITICAL${c.r} ${c.fog}connection dropped${c.r}`);
 writeln(`${c.sage}✔${c.r} all systems nominal`);
@@ -343,7 +343,7 @@ writeln(`${c.amber}⚠${c.r} approaching rate limit`);
 Compact inline charts using Unicode block characters. Perfect inside log lines.
 
 ```js
-import { sparkline, log } from 'lumi-cli';
+import { sparkline, log } from '@nijil71/lumi-cli';
 
 const cpu  = [12, 45, 78, 34, 90, 23, 55, 67, 88, 41];
 const errs = [0, 0, 1, 0, 0, 3, 8, 2, 0, 0];
@@ -363,7 +363,7 @@ Options: `color`, `min`, `max` (clamp/override scale).
 Render nested file trees, config hierarchies, or dependency graphs.
 
 ```js
-import { tree } from 'lumi-cli';
+import { tree } from '@nijil71/lumi-cli';
 
 tree({
   'src/': {
@@ -397,7 +397,7 @@ Options: `color`, `dirColor`, `lineColor`.
 Colored line-by-line diff using LCS. Added lines in green, removed in red.
 
 ```js
-import { diff } from 'lumi-cli';
+import { diff } from '@nijil71/lumi-cli';
 
 diff(oldCode, newCode, {
   oldLabel:    'server.js (before)',
@@ -424,7 +424,7 @@ diff(oldCode, newCode, {
 A persistent status line pinned to the bottom terminal row. Uses cursor save/restore — never interrupts your normal log output.
 
 ```js
-import { StatusBar } from 'lumi-cli';
+import { StatusBar } from '@nijil71/lumi-cli';
 
 const bar = new StatusBar({ left: '⣿ Building…', right: 'CPU: 42%' });
 bar.render();
@@ -445,7 +445,7 @@ Zero-dependency interactive prompts. Arrow keys, backspace, Ctrl+C safe. Non-TTY
 ### confirm
 
 ```js
-import { confirm } from 'lumi-cli';
+import { confirm } from '@nijil71/lumi-cli';
 
 const ok = await confirm('Deploy to production?');
 // ? Deploy to production?  Y/n
@@ -455,7 +455,7 @@ const ok = await confirm('Deploy to production?');
 ### select
 
 ```js
-import { select } from 'lumi-cli';
+import { select } from '@nijil71/lumi-cli';
 
 const env = await select('Target environment:', ['dev', 'staging', 'production'], {
   default: 'staging',
@@ -468,7 +468,7 @@ const env = await select('Target environment:', ['dev', 'staging', 'production']
 ### input
 
 ```js
-import { input } from 'lumi-cli';
+import { input } from '@nijil71/lumi-cli';
 
 const tag   = await input('Release tag:',  { default: 'v1.0.0' });
 const token = await input('API token:',    { password: true });
@@ -485,7 +485,7 @@ Non-TTY fallback: all prompts immediately return their `default` value with a `[
 OSC 8 clickable links, supported in iTerm2, WezTerm, Windows Terminal, Kitty, GNOME Terminal 3.26+. Falls back to plain visible text elsewhere.
 
 ```js
-import { ansi, writeln, c } from 'lumi-cli';
+import { ansi, writeln, c } from '@nijil71/lumi-cli';
 
 writeln(`Docs: ${ansi.link(`${c.azure}lumi-cli on GitHub${c.r}`, 'https://github.com/nijil71/Lumi')}`);
 ```
