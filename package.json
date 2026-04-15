@@ -1,5 +1,5 @@
 {
-  "name": "lumi-cli",
+  "name": "@nijil71/lumi-cli",
   "version": "1.0.1",
   "description": "Terminal UI components — spinners, progress bars, boxes, tables, banners — zero dependencies",
   "type": "module",
@@ -52,5 +52,8 @@
   "license": "MIT",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "lumi-cli": "^1.0.0"
   }
 }
