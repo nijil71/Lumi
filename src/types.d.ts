@@ -97,7 +97,9 @@ export type SpinnerType =
   | 'braille' | 'block' | 'cross' | 'orbital' | 'pulse' | 'dash'
   | 'grid' | 'triangle' | 'snake' | 'signal' | 'clock' | 'morph'
   // new
-  | 'arc' | 'line' | 'star' | 'wave' | 'balloon' | 'cyber' | 'flip' | 'meter';
+  | 'arc' | 'line' | 'star' | 'wave' | 'balloon' | 'cyber' | 'flip' | 'meter'
+  // cute pets
+  | 'catWalk' | 'dogWag' | 'bunnyHop' | 'fishSwim' | 'birdFlap' | 'turtleCrawl';
 
 export type ColorName =
   | 'default' | 'chalk' | 'signal' | 'sage' | 'azure'

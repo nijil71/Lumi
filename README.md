@@ -45,7 +45,7 @@ import { spinner, ProgressBar, box, table, banner, log, gradient } from '@nijil7
 
 ```
 lumi-cli
-├── Spinners      20 types  ·  single + multi  ·  promise wrapper
+├── Spinners      26 types  ·  single + multi  ·  promise wrapper  ·  6 pet spinners
 ├── Progress      6 styles  ·  single + multi  ·  ETA + rate
 ├── Box           6 borders ·  title + footer  ·  align + padding
 ├── Table         4 borders ·  per-col align   ·  truncation
@@ -103,7 +103,7 @@ await test();    multi.fail(c,    '3 failures');
 multi.stop();
 ```
 
-**20 spinner types:**
+**26 spinner types** — including 6 cute multi-line pet spinners:
 
 | name | preview | interval |
 |------|---------|----------|
@@ -127,6 +127,28 @@ multi.stop();
 | `line`     | \|/─\\             | 80ms  |
 | `flip`     | _ _ - ` ′ ‾ - _   | 110ms |
 | `meter`    | ▱▱▱▱▱ → ▰▰▰▰▰      | 100ms |
+
+### Pet spinners 🐾
+
+Multi-line ASCII art animals that animate as your loading indicators. Because waiting should be fun.
+
+```js
+const sp = new Spinner({ type: 'catWalk', text: 'Compiling…', color: 'lavender' });
+sp.start();
+// ...
+sp.succeed('Build complete');
+```
+
+| name | description | interval |
+|------|-------------|----------|
+| `catWalk`      | 🐱 Walking cat with swaying paws    | 200ms |
+| `dogWag`       | 🐶 Happy dog wagging its tail       | 180ms |
+| `bunnyHop`     | 🐰 Bunny hopping along              | 200ms |
+| `fishSwim`     | 🐟 Fish swimming side to side       | 200ms |
+| `birdFlap`     | 🐦 Bird flapping its wings          | 150ms |
+| `turtleCrawl`  | 🐢 Turtle slowly crawling along     | 250ms |
+
+Pet spinners render as multi-line ASCII art in the terminal with the status text displayed below. They automatically clean up on `succeed()`, `fail()`, `warn()`, `info()`, and `stop()`.
 
 ---
 
@@ -498,6 +520,7 @@ writeln(`Docs: ${ansi.link(`${c.azure}lumi-cli on GitHub${c.r}`, 'https://github
 npx lumi demo                  # full cinematic showcase
 npx lumi demo prompts          # interactive prompts demo (live input)
 npx lumi demo spinners         # just spinners
+npx lumi demo pets             # cute pet spinners 🐾
 npx lumi demo progress         # just progress bars
 npx lumi demo tree diff        # multiple sections
 npx lumi demo --slow           # presentation mode
@@ -514,7 +537,7 @@ npx lumi --help
 |---|:---:|:---:|
 | Install size | **~30 KB** | ~150 KB+ |
 | Runtime deps | **0** | 15+ transitive |
-| Spinners | ✔ 20 types | ora — separate |
+| Spinners | ✔ 26 types (+ 6 pets 🐾) | ora — separate |
 | Progress bars | ✔ 6 styles | cli-progress — separate |
 | Boxes | ✔ 6 borders | boxen — separate |
 | Tables | ✔ 4 borders | cli-table3 — separate |

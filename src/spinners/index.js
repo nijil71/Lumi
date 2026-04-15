@@ -26,6 +26,49 @@ export const SPINNERS = {
   cyber:    { interval: 70,  frames: ['⣿','⣾','⣼','⣸','⢸','⡸','⡰','⡠','⡀','⢀','⣀','⣄','⣆','⣇','⣏','⣟'] },
   flip:     { interval: 110, frames: ['_','_','_','-','`','\'','´','‾','-','_','_'] },
   meter:    { interval: 100, frames: ['▱▱▱▱▱','▰▱▱▱▱','▰▰▱▱▱','▰▰▰▱▱','▰▰▰▰▱','▰▰▰▰▰','▰▰▰▰▱','▰▰▰▱▱','▰▰▱▱▱','▰▱▱▱▱'] },
+
+  // — cute pets —
+  catWalk: { interval: 200, frames: [
+    '  /\\_/\\  \n =( °w° )=\n  )   ( //\n (__ __)// ',
+    '  /\\_/\\  \n =( °w° )=\n \\\\)   (  \n \\\\(__ __) ',
+    '  /\\_/\\  \n =( -w- )=\n  )   ( //\n (__ __)// ',
+    '  /\\_/\\  \n =( °w° )=\n \\\\)   (  \n \\\\(__ __) ',
+  ]},
+  dogWag: { interval: 180, frames: [
+    '  ∪・ω・∪  \n / |    |\\~\n   |    |   \n   d    b   ',
+    '  ∪・ω・∪  \n / |    | \\~\n   |    |   \n   d    b   ',
+    '  ∪・ω・∪  \\~\n / |    |  \n   |    |   \n   d    b   ',
+    '  ∪・ω・∪  \n / |    | \\~\n   |    |   \n   d    b   ',
+    ' \\~∪・ω・∪  \n / |    |  \n   |    |   \n   d    b   ',
+  ]},
+  bunnyHop: { interval: 200, frames: [
+    ' (\\(\\   \n ( -.-)  \n o_(")(") ',
+    ' (\\(\\   \n ( °.°)  \n o_(")(") ',
+    '  (\\(\\  \n  ( °.°) \n  (")(") ',
+    '   (\\(\\ \n   ( -.-)   \n  o_(")(")',
+  ]},
+  fishSwim: { interval: 200, frames: [
+    '       ><(((°>',
+    '      ><(((°> ',
+    '     ><(((°>  ',
+    '    ><(((°>   ',
+    '   ><(((°>    ',
+    '    ><(((°>   ',
+    '     ><(((°>  ',
+    '      ><(((°> ',
+  ]},
+  birdFlap: { interval: 150, frames: [
+    '   ,_,   \n  (o.o)  \n /( _ )\\ \n   ˬ ˬ   ',
+    '   ,_,   \n  (o.o)  \n  ( _ )  \n / ˬ ˬ \\ ',
+    '   ,_,   \n  (o.o)  \n\\( _ ) / \n   ˬ ˬ   ',
+    '   ,_,   \n  (o.o)  \n  ( _ )  \n / ˬ ˬ \\ ',
+  ]},
+  turtleCrawl: { interval: 250, frames: [
+    '    _____     \n  /       \\   \n |  °  °  |_  \n |   __   / \\ \n  \\_____/ ︢ ︢ ',
+    '    _____     \n  /       \\   \n |  -  -  |_  \n |   __   / \\ \n  \\_____/︢ ︢  ',
+    '    _____     \n  /       \\   \n |  °  °  |_  \n |   __   / \\ \n  \\_____/ ︢ ︢ ',
+    '    _____     \n  /       \\   \n |  °  °  |_  \n |   __   / \\ \n  \\_____/  ︢ ︢',
+  ]},
 };
 
 // ─── SIGINT cleanup registry ──────────────────────────────────────────────
@@ -64,11 +107,13 @@ export class Spinner {
     this._prefix  = options.prefix || '';
     this._elapsed = options.elapsed || false;
     this._startMs = null;
+    // Multi-line support for pet spinners
+    this._multiLine = this._def.frames.some(f => f.includes('\n'));
+    this._renderedLines = 0;
   }
 
   _render() {
     const frame   = this._def.frames[this._frame % this._def.frames.length];
-    const spinner = this._colorFn(frame);
     const prefix  = this._prefix ? `${colors.slate}${colors.b}${this._prefix}${colors.r} ` : '';
     let text    = this._text   ? ` ${colors.fog}${this._text}${colors.r}` : '';
 
@@ -77,7 +122,22 @@ export class Spinner {
       text += ` ${colors.slate}${formatElapsed(elapsed)}${colors.r}`;
     }
 
-    write(ansi.col(1) + ansi.clearLine() + `${prefix}${spinner}${text}`);
+    if (this._multiLine) {
+      // Multi-line pet spinner: clear previous frame, then draw each line
+      if (this._renderedLines > 0) {
+        write(ansi.up(this._renderedLines));
+      }
+      const lines = frame.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        write(ansi.col(1) + ansi.clearLine() + `  ${this._colorFn(lines[i])}` + '\n');
+      }
+      // Print status text on its own line below the pet
+      write(ansi.col(1) + ansi.clearLine() + `${prefix}${colors.fog}⠿${colors.r}${text}`);
+      this._renderedLines = lines.length;
+    } else {
+      const spinner = this._colorFn(frame);
+      write(ansi.col(1) + ansi.clearLine() + `${prefix}${spinner}${text}`);
+    }
     this._frame++;
   }
 
@@ -93,6 +153,14 @@ export class Spinner {
     ensureSigintHandler();
     activeInstances.add(this);
     write(ansi.hide());
+
+    // Pre-allocate lines for multi-line spinners so first render doesn't jump
+    if (this._multiLine) {
+      const frameLines = this._def.frames[0].split('\n').length;
+      for (let i = 0; i < frameLines + 1; i++) write('\n'); // +1 for status text line
+      this._renderedLines = frameLines;
+    }
+
     this._timer = setInterval(() => this._render(), this._def.interval);
     this._render();
     return this;
@@ -116,6 +184,14 @@ export class Spinner {
     }
 
     if (isTTY()) {
+      // Clear all lines from a multi-line pet spinner
+      if (this._multiLine && this._renderedLines > 0) {
+        write(ansi.up(this._renderedLines));
+        for (let i = 0; i <= this._renderedLines; i++) {
+          write(ansi.col(1) + ansi.clearLine() + '\n');
+        }
+        write(ansi.up(this._renderedLines + 1));
+      }
       write(ansi.col(1) + ansi.clearLine());
     }
     write(`${symbol} ${colors.chalk}${text}${colors.r}${elapsed}\n`);
@@ -126,6 +202,14 @@ export class Spinner {
     clearInterval(this._timer);
     activeInstances.delete(this);
     if (isTTY()) {
+      // Clear all lines from a multi-line pet spinner
+      if (this._multiLine && this._renderedLines > 0) {
+        write(ansi.up(this._renderedLines));
+        for (let i = 0; i <= this._renderedLines; i++) {
+          write(ansi.col(1) + ansi.clearLine() + '\n');
+        }
+        write(ansi.up(this._renderedLines + 1));
+      }
       write(ansi.col(1) + ansi.clearLine());
     }
     write(ansi.show());

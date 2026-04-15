@@ -107,7 +107,7 @@ async function demoLogger() {
 
 async function demoSpinners() {
   sectionDivider('SPINNERS', GRADIENTS.fire);
-  header('20 animation types', 'every frame hand-crafted');
+  header('26 animation types', 'every frame hand-crafted — including 6 cute pets');
 
   const types = [
     { type: 'braille',  text: 'braille — classic dots',      color: 'chalk',    dur: 800  },
@@ -138,6 +138,30 @@ async function demoSpinners() {
     await sleep(fast ? 180 : slow ? s.dur : 460);
     sp.succeed(s.text);
     await pause(25);
+  }
+  writeln();
+}
+
+// ─── Pet Spinners ─────────────────────────────────────────────────────────
+
+async function demoPetSpinners() {
+  header('pet spinners 🐾', 'adorable animated companions for your loading states');
+
+  const pets = [
+    { type: 'catWalk',      text: 'Compiling with cattitude…',    color: 'lavender', dur: 2200 },
+    { type: 'dogWag',       text: 'Fetching dependencies…',       color: 'amber',    dur: 2000 },
+    { type: 'bunnyHop',     text: 'Hopping through tests…',       color: 'sage',     dur: 2000 },
+    { type: 'fishSwim',     text: 'Swimming through data…',       color: 'azure',    dur: 2200 },
+    { type: 'birdFlap',     text: 'Deploying to the cloud…',      color: 'chalk',    dur: 2000 },
+    { type: 'turtleCrawl',  text: 'Patiently building assets…',   color: 'sage',     dur: 2200 },
+  ];
+
+  for (const pet of pets) {
+    const sp = new Spinner({ type: pet.type, text: pet.text, color: pet.color, elapsed: true });
+    sp.start();
+    await sleep(fast ? 400 : slow ? pet.dur : 1200);
+    sp.succeed(pet.text);
+    await pause(60);
   }
   writeln();
 }
@@ -486,6 +510,7 @@ const SECTIONS = {
   banner:    splash,
   logger:    demoLogger,
   spinners:  demoSpinners,
+  pets:      demoPetSpinners,
   multi:     demoMultiSpinner,
   progress:  demoProgress,
   multibar:  demoMultiBar,
