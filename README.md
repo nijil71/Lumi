@@ -1,198 +1,291 @@
-# lumi-cli
-
-Terminal UI components — spinners, progress bars, boxes, tables, banners — with zero runtime dependencies.
-
 ```
-npm install lumi-cli
+ ██╗     ██╗   ██╗███╗   ███╗██╗
+ ██║     ██║   ██║████╗ ████║██║
+ ██║     ██║   ██║██╔████╔██║██║
+ ██║     ██║   ██║██║╚██╔╝██║██║
+ ███████╗╚██████╔╝██║ ╚═╝ ██║██║
+ ╚══════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝
 ```
 
-> **Node.js ≥ 18** required. Pure ESM — no CommonJS export.
+Terminal UI toolkit for Node.js — spinners, progress bars, tables, boxes, banners, gradients, prompts, and more. Zero runtime dependencies.
+
+[![npm](https://img.shields.io/npm/v/lumi-cli?color=%236C47FF&style=flat-square&label=npm)](https://www.npmjs.com/package/lumi-cli)
+[![install size](https://img.shields.io/badge/install%20size-~30%20KB-brightgreen?style=flat-square)](https://packagephobia.com/result?p=lumi-cli)
+[![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen?style=flat-square)](https://www.npmjs.com/package/lumi-cli?activeTab=dependencies)
+[![node](https://img.shields.io/badge/node-%E2%89%A518-important?style=flat-square)](https://nodejs.org)
+[![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
 ---
 
-## Install & run
+## See it in action
 
 ```bash
-npm install lumi-cli
-
-# see everything in action
 npx lumi demo
 ```
 
+Runs without installing. Shows every component live in your terminal.
+
 ---
 
-## Usage
+## Install
 
-```js
-import { spinner, progressBar, box, table, banner, log } from 'lumi-cli';
+```bash
+npm install lumi-cli
 ```
 
-### Spinners
+> **Node.js ≥ 18** · Pure ESM · No CommonJS · No polyfills · No setup
+
+```js
+import { spinner, ProgressBar, box, table, banner, log, gradient } from 'lumi-cli';
+```
+
+---
+
+## What's inside
+
+```
+lumi-cli
+├── Spinners      20 types  ·  single + multi  ·  promise wrapper
+├── Progress      6 styles  ·  single + multi  ·  ETA + rate
+├── Box           6 borders ·  title + footer  ·  align + padding
+├── Table         4 borders ·  per-col align   ·  truncation
+├── Banner        block-letter ASCII art  ·  gradient support
+├── Logger        info/success/warn/error/debug · kv · step
+├── Gradient      truecolor left→right · 8 built-in presets
+├── Sparkline     inline block-char mini-charts
+├── Tree          nested object/file tree renderer
+├── Diff          LCS-based colored line diff
+├── StatusBar     persistent bottom-of-terminal status line
+├── Prompts       confirm · select · input  (zero-dep, arrow keys)
+└── Utils         ANSI primitives · OSC 8 links · TTY detection
+```
+
+---
+
+## Spinners
 
 ```js
 import { Spinner } from 'lumi-cli';
 
-const sp = new Spinner({ type: 'braille', text: 'Compiling...', color: 'azure' });
+const sp = new Spinner({ type: 'wave', text: 'Building…', color: 'azure', elapsed: true });
 sp.start();
 // ... do work ...
-sp.succeed('Compiled in 1.2s');
+sp.succeed('Build complete — 1.2s');
+// or: sp.fail(msg)  sp.warn(msg)  sp.info(msg)
 ```
 
-End states: `sp.succeed(text)`, `sp.fail(text)`, `sp.warn(text)`, `sp.info(text)`.
-
-**Elapsed time** — shows how long the spinner has been running:
+**Wrap a promise** — start, await, print result automatically:
 
 ```js
-const sp = new Spinner({ text: 'Building', elapsed: true });
+await Spinner.promise(fetchData(), {
+  text:        'Fetching data…',
+  successText: 'Data loaded',
+  failText:    'Fetch failed',
+  color:       'sage',
+});
 ```
 
-**Wrap a promise:**
-
-```js
-import { Spinner } from 'lumi-cli';
-
-await Spinner.promise(fetchData(), { text: 'Fetching data...', color: 'sage' });
-```
-
-**Run multiple spinners simultaneously:**
+**Run tasks in parallel:**
 
 ```js
 import { MultiSpinner } from 'lumi-cli';
 
 const multi = new MultiSpinner();
-const a = multi.add({ type: 'braille', text: 'Compiling',  color: 'azure' });
-const b = multi.add({ type: 'dash',    text: 'Bundling',   color: 'lavender' });
+const a = multi.add({ type: 'braille', text: 'Compiling',  color: 'azure'    });
+const b = multi.add({ type: 'wave',    text: 'Bundling',   color: 'lavender' });
+const c = multi.add({ type: 'cyber',   text: 'Testing',    color: 'chalk'    });
 multi.start();
 
-// resolve independently
-multi.succeed(a, 'Compiled — 0 errors');
-multi.fail(b, '3 bundle warnings');
+// resolve each independently, in any order
+await compile(); multi.succeed(a, 'Compiled — 0 errors');
+await bundle();  multi.succeed(b, 'Bundle: 48 KB gzip');
+await test();    multi.fail(c,    '3 failures');
 multi.stop();
 ```
 
-**12 spinner types:**
+**20 spinner types:**
 
-| name | frames | interval |
-|------|--------|----------|
-| `braille` | ⠋⠙⠹⠸⠼⠴⠦ | 80ms |
-| `block` | ▏▎▍▌▋▊▉█ | 120ms |
-| `dash` | ▰▱▱▱ → ▰▰▰▰ | 90ms |
-| `orbital` | ◜◝◞◟ | 100ms |
-| `pulse` | ·•●◉●•· | 180ms |
-| `grid` | ⣾⣽⣻⢿⡿⣟ | 130ms |
-| `triangle` | ◢◣◤◥ | 100ms |
-| `snake` | ⠁⠂⠄⡀⢀⠠ | 70ms |
-| `signal` | · ·· ··· | 200ms |
-| `cross` | ┼╋┿╈╉╊ | 150ms |
-| `morph` | ◰◳◲◱ | 150ms |
-| `clock` | 🕛🕐🕑🕒 | 100ms |
+| name | preview | interval |
+|------|---------|----------|
+| `braille`  | ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏     | 80ms  |
+| `wave`     | ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁  | 80ms  |
+| `dash`     | ▰▰▰▱▱▱▱ → ▰▰▰▰▰▰▰ | 90ms  |
+| `cyber`    | ⣿⣾⣼⣸⢸⡸⡰⡠⡀ …     | 70ms  |
+| `arc`      | ◐◓◑◒               | 100ms |
+| `block`    | ▏▎▍▌▋▊▉█▉▊▋▌▍▎    | 120ms |
+| `orbital`  | ◜◝◞◟               | 100ms |
+| `pulse`    | ·•●◉●•·            | 180ms |
+| `grid`     | ⣾⣽⣻⢿⡿⣟⣯⣷         | 130ms |
+| `triangle` | ◢◣◤◥               | 100ms |
+| `snake`    | ⠁⠂⠄⡀⢀⠠⠐⠈ …       | 70ms  |
+| `signal`   | · ·· ···           | 200ms |
+| `morph`    | ◰◳◲◱               | 150ms |
+| `cross`    | ┼╋┿╈╉╊ …           | 150ms |
+| `clock`    | 🕛🕐🕑🕒 …         | 100ms |
+| `star`     | ✶✸✹✺✹✷             | 100ms |
+| `balloon`  | .oO@*O o.          | 140ms |
+| `line`     | \|/─\\             | 80ms  |
+| `flip`     | _ _ - ` ′ ‾ - _   | 110ms |
+| `meter`    | ▱▱▱▱▱ → ▰▰▰▰▰      | 100ms |
 
 ---
 
-### Progress bars
+## Progress bars
 
 ```js
 import { ProgressBar } from 'lumi-cli';
 
 const bar = new ProgressBar({
   total: 100,
-  style: 'bracket',   // block | shaded | bracket | thin | brutalist | dots
+  style: 'wave',      // block | shaded | bracket | thin | brutalist | dots
   color: 'azure',     // chalk | signal | sage | azure | amber | lavender
   label: 'uploading',
-  eta:   true,         // show estimated time remaining
-  rate:  true,         // show items/sec
+  eta:   true,        // estimated time remaining
+  rate:  true,        // items/sec
 });
 
 bar.start();
-bar.update(50);
-bar.increment(10);
-bar.complete('Upload done');
+bar.update(50);       // jump to value
+bar.increment(10);    // add to current
+bar.complete('Done'); // jump to 100% + print checkmark
 ```
 
-**Multiple bars at once:**
+**Multiple bars:**
 
 ```js
 import { MultiBar } from 'lumi-cli';
 
 const mb = new MultiBar();
-const a = mb.add({ total: 100, style: 'block',  label: 'kernel.img' });
-const b = mb.add({ total: 200, style: 'shaded', label: 'assets.tar' });
+const a = mb.add({ total: 100, style: 'block',  label: 'kernel.img',    color: 'azure'    });
+const b = mb.add({ total: 100, style: 'shaded', label: 'node_modules',  color: 'lavender' });
+const c = mb.add({ total: 100, style: 'dots',   label: 'assets.tar.gz', color: 'sage'     });
 mb.start();
-mb.update(a, 60);
-mb.update(b, 140);
+
+// call mb.update(idx, value) + mb.tick() each frame
+mb.update(a, 60); mb.update(b, 40); mb.update(c, 90);
 mb.tick();
 mb.stop();
 ```
 
 ---
 
-### Boxes
+## Boxes
 
 ```js
-import { box } from 'lumi-cli';
+import { box, columns } from 'lumi-cli';
 
 box('Hello from lumi.', {
-  border:  'single',   // single | double | rounded | thick | dashed | ascii
-  color:   'chalk',
+  border:  'rounded',   // single | double | rounded | thick | dashed | ascii
+  color:   'azure',
   title:   'NOTE',
   footer:  'v1.0.0',
   padding: 1,
   width:   60,
-  align:   'left',     // left | center | right
+  align:   'center',    // left | center | right
 });
+```
+
+```
+╭──────────────── NOTE ───────────────────╮
+│                                         │
+│           Hello from lumi.              │
+│                                         │
+├─────────────────────────────────────────┤
+│  v1.0.0                                 │
+╰─────────────────────────────────────────╯
+```
+
+**Multi-column layout:**
+
+```js
+columns([
+  { content: ['col one', 'line 2'] },
+  { content: ['col two', 'line 2'] },
+  { content: ['col three'] },
+], { gap: 4 });
 ```
 
 ---
 
-### Tables
+## Table
 
 ```js
 import { table } from 'lumi-cli';
 
 table([
-  { name: 'alpha', version: '1.0.0', status: 'stable' },
-  { name: 'beta',  version: '2.1.3', status: 'rc' },
+  { name: 'alpha', version: '1.0.0', status: 'stable', size: '12 KB' },
+  { name: 'beta',  version: '2.1.3', status: 'rc',     size: '8 KB'  },
 ], {
-  border: 'single',    // single | thick | double | minimal
-  align: { version: 'right' },  // per-column alignment
-  maxWidth: { name: 20 },       // truncate long values
+  border:   'single',               // single | thick | double | minimal
+  align:    { size: 'right' },      // per-column alignment
+  maxWidth: { name: 20 },           // truncate long values
 });
 ```
 
 ---
 
-### Banner
+## Banner
 
-Block-letter ASCII art using a custom 5×5 glyph set. Supports A–Z, 0–9, and basic punctuation.
+Block-letter ASCII art — custom 5×5 glyph set, A–Z, 0–9, punctuation.
 
 ```js
 import { banner, divider, header, badge } from 'lumi-cli';
 
-banner('DONE', { color: 'sage', align: 'center' });
+// Flat color
+banner('LUMI', { color: 'lavender', align: 'center' });
 
-divider({ label: 'SECTION', char: '─' });
+// Truecolor gradient
+import { GRADIENTS } from 'lumi-cli';
+banner('LUMI', { gradient: GRADIENTS.neon, align: 'center' });
 
-header('logging', 'structured output');
+divider({ label: 'SECTION' });
 
-console.log(`Release ${badge('v1.0.0', { type: 'success' })} is live`);
+header('deployment', 'step 3 of 8');
+
+console.log(`Build ${badge('v1.0.0', { type: 'success' })} deployed`);
+// badge types: default | success | error | warning | info
 ```
 
 ---
 
-### Logger
+## Gradient
+
+```js
+import { gradient, GRADIENTS, writeln } from 'lumi-cli';
+
+// gradient(text, fromRGB, toRGB)
+writeln(gradient('Hello, terminal.', [108, 71, 255], [0, 201, 167]));
+
+// 8 built-in presets — spread directly into gradient()
+writeln(gradient('neon',   ...GRADIENTS.neon));
+writeln(gradient('fire',   ...GRADIENTS.fire));
+writeln(gradient('ice',    ...GRADIENTS.ice));
+writeln(gradient('sunset', ...GRADIENTS.sunset));
+writeln(gradient('matrix', ...GRADIENTS.matrix));
+writeln(gradient('gold',   ...GRADIENTS.gold));
+writeln(gradient('dawn',   ...GRADIENTS.dawn));
+writeln(gradient('ocean',  ...GRADIENTS.ocean));
+```
+
+Gracefully falls back to unstyled text when the terminal doesn't support truecolor.
+
+---
+
+## Logger
 
 ```js
 import { log, createLogger } from 'lumi-cli';
 
 log.info('Server starting');
 log.success('Listening on :3000');
-log.warn('High memory usage');
+log.warn('Memory at 78%');
 log.error('Unhandled rejection');
 log.debug('Event loop lag: 2ms');
 
-// key-value pairs
+// key-value pairs — aligned
 log.kv('NODE_ENV', 'production');
 log.kv('PORT',     '3000');
+log.kv('REGION',   'ap-south-1');
 
 // step sequences
 log.step(1, 8, 'Checkout repository');
@@ -201,79 +294,245 @@ log.step(2, 8, 'Install dependencies');
 // named logger with timestamps
 const api = createLogger({ prefix: 'api', timestamps: true });
 api.info('Request received');
+api.success('Response sent — 12ms');
 ```
 
 ---
 
-## Colors
+## Colors & palette
 
-7 named colors used across all components:
+7 semantic colors used consistently across all components:
 
-| name | use |
-|------|-----|
-| `chalk` | default text, high contrast |
-| `signal` | errors, critical alerts |
-| `sage` | success states |
-| `azure` | info, links, active state |
-| `amber` | warnings |
-| `lavender` | accents, secondary actions |
-| `dim` | muted, disabled |
+| name | hex | use |
+|------|-----|-----|
+| `chalk`    | `#EBEBF0` | default text, high contrast |
+| `signal`   | `#FF504C` | errors, critical |
+| `sage`     | `#50C88C` | success, green states |
+| `azure`    | `#3CA0FF` | info, links, active |
+| `amber`    | `#FFB928` | warnings, caution |
+| `lavender` | `#B48CFF` | accents, highlights |
+| `dim`      | `#5A5A69` | muted, disabled |
 
-Access palette colors for custom output:
+**Use palette directly in your own output:**
 
 ```js
 import { c, writeln } from 'lumi-cli';
 
-writeln(`${c.signal}${c.b}CRITICAL${c.r} ${c.fog}something went wrong${c.r}`);
+writeln(`${c.signal}${c.b}CRITICAL${c.r} ${c.fog}connection dropped${c.r}`);
 writeln(`${c.sage}✔${c.r} all systems nominal`);
+writeln(`${c.amber}⚠${c.r} approaching rate limit`);
 ```
 
 ---
 
 ## Terminal behavior
 
-**Non-TTY mode**: When stdout isn't a terminal (piped, redirected, CI), interactive components degrade gracefully:
-- Spinners print the final state only (no animation)
-- Progress bars print at 25%, 50%, 75%, 100% instead of animating
-- Colors are stripped
+**Non-TTY / CI pipelines** — when stdout is piped or redirected:
+- Spinners print final state only (no animation frames)
+- Progress bars print at 25 %, 50 %, 75 %, 100 % milestones
+- Colors are stripped automatically — clean logs, no ANSI noise
 
-**NO_COLOR**: Set `NO_COLOR=1` to disable all color output ([no-color.org](https://no-color.org/)). Also respects `FORCE_COLOR` to override detection.
-
-**Ctrl+C safety**: Spinners and progress bars restore the cursor on SIGINT — no more invisible cursors after cancellation.
+**`NO_COLOR`** — set `NO_COLOR=1` to disable all color ([no-color.org](https://no-color.org/))
+**`FORCE_COLOR`** — override detection (`FORCE_COLOR=3` for truecolor)
+**Ctrl+C safety** — all animated components restore the cursor on SIGINT
 
 ---
 
-## Why this instead of chalk + ora + boxen?
+## Sparklines
 
-| | lumi-cli | chalk+ora+boxen+cli-progress |
-|---|---|---|
-| Install size | ~30KB | ~150KB+ |
-| Dependencies | 0 | 15+ transitive |
-| Spinners | ✔ built-in | ora (separate) |
-| Progress | ✔ built-in | cli-progress (separate) |
-| Boxes | ✔ built-in | boxen (separate) |
-| Tables | ✔ built-in | cli-table3 (separate) |
-| Banner art | ✔ custom glyphs | figlet (separate) |
-| Consistent palette | ✔ shared | DIY |
+Compact inline charts using Unicode block characters. Perfect inside log lines.
 
-Trade-offs: lumi-cli is opinionated — one palette, one style system. If you need full Figlet font support, 16M color pickers, or complex table layouts, use the dedicated packages.
+```js
+import { sparkline, log } from 'lumi-cli';
+
+const cpu  = [12, 45, 78, 34, 90, 23, 55, 67, 88, 41];
+const errs = [0, 0, 1, 0, 0, 3, 8, 2, 0, 0];
+
+log.kv('CPU   (10m)', sparkline(cpu,  { color: 'azure'  }));
+log.kv('Errors(10m)', sparkline(errs, { color: 'signal' }));
+// CPU   (10m)   ▁▄▇▃█▂▅▆█▃
+// Errors(10m)   ▁▁▂▁▁▃█▂▁▁
+```
+
+Options: `color`, `min`, `max` (clamp/override scale).
+
+---
+
+## Tree
+
+Render nested file trees, config hierarchies, or dependency graphs.
+
+```js
+import { tree } from 'lumi-cli';
+
+tree({
+  'src/': {
+    'index.js': null,
+    'utils/': {
+      'math.js':   null,
+      'string.js': null,
+    },
+  },
+  'package.json': null,
+  'README.md':    null,
+});
+```
+
+```
+├── src/
+│   ├── index.js
+│   └── utils/
+│       ├── math.js
+│       └── string.js
+├── package.json
+└── README.md
+```
+
+Options: `color`, `dirColor`, `lineColor`.
+
+---
+
+## Diff
+
+Colored line-by-line diff using LCS. Added lines in green, removed in red.
+
+```js
+import { diff } from 'lumi-cli';
+
+diff(oldCode, newCode, {
+  oldLabel:    'server.js (before)',
+  newLabel:    'server.js (after)',
+  context:     3,      // context lines around changes (default: 3)
+  lineNumbers: true,   // show line numbers (default: true)
+});
+```
+
+```
+─ server.js (before)
++ server.js (after)
+────────────────────────────────────────
+   1   const PORT = 3000;
+─  2   res.send('Hello world');
++  2   res.json({ status: 'ok' });
+   3   app.listen(PORT, ...
+```
+
+---
+
+## StatusBar
+
+A persistent status line pinned to the bottom terminal row. Uses cursor save/restore — never interrupts your normal log output.
+
+```js
+import { StatusBar } from 'lumi-cli';
+
+const bar = new StatusBar({ left: '⣿ Building…', right: 'CPU: 42%' });
+bar.render();
+
+// update during long-running work
+bar.update({ left: '⣿ Bundling…', right: 'CPU: 78%  ETA: 12s' });
+
+// remove when done
+bar.clear();
+```
+
+---
+
+## Prompts
+
+Zero-dependency interactive prompts. Arrow keys, backspace, Ctrl+C safe. Non-TTY environments automatically return defaults.
+
+### confirm
+
+```js
+import { confirm } from 'lumi-cli';
+
+const ok = await confirm('Deploy to production?');
+// ? Deploy to production?  Y/n
+// ✔ Deploy to production?  yes
+```
+
+### select
+
+```js
+import { select } from 'lumi-cli';
+
+const env = await select('Target environment:', ['dev', 'staging', 'production'], {
+  default: 'staging',
+});
+// ? Target environment?
+//   ❯ staging          ← arrow keys to move, Enter to select
+//     production
+```
+
+### input
+
+```js
+import { input } from 'lumi-cli';
+
+const tag   = await input('Release tag:',  { default: 'v1.0.0' });
+const token = await input('API token:',    { password: true });
+// ✔ Release tag:   v1.0.0
+// ✔ API token:     ●●●●●●●●●●●●
+```
+
+Non-TTY fallback: all prompts immediately return their `default` value with a `[non-interactive]` notice — clean behavior in CI.
+
+---
+
+## Hyperlinks
+
+OSC 8 clickable links, supported in iTerm2, WezTerm, Windows Terminal, Kitty, GNOME Terminal 3.26+. Falls back to plain visible text elsewhere.
+
+```js
+import { ansi, writeln, c } from 'lumi-cli';
+
+writeln(`Docs: ${ansi.link(`${c.azure}lumi-cli on GitHub${c.r}`, 'https://github.com/nijil71/Lumi')}`);
+```
 
 ---
 
 ## CLI
 
 ```bash
-npx lumi demo           # run full showcase
-npx lumi demo spinners  # just spinners
-npx lumi demo progress  # just progress bars
+npx lumi demo                  # full cinematic showcase
+npx lumi demo prompts          # interactive prompts demo (live input)
+npx lumi demo spinners         # just spinners
+npx lumi demo progress         # just progress bars
+npx lumi demo tree diff        # multiple sections
+npx lumi demo --slow           # presentation mode
+npx lumi demo --fast           # skim mode
 npx lumi --version
 npx lumi --help
 ```
 
 ---
 
+## Why lumi-cli instead of chalk + ora + boxen?
+
+| | **lumi-cli** | chalk + ora + boxen + cli-progress |
+|---|:---:|:---:|
+| Install size | **~30 KB** | ~150 KB+ |
+| Runtime deps | **0** | 15+ transitive |
+| Spinners | ✔ 20 types | ora — separate |
+| Progress bars | ✔ 6 styles | cli-progress — separate |
+| Boxes | ✔ 6 borders | boxen — separate |
+| Tables | ✔ 4 borders | cli-table3 — separate |
+| ASCII banners | ✔ custom glyphs | figlet — 2.8 MB |
+| Gradient text | ✔ built-in | not available |
+| Sparklines | ✔ built-in | not available |
+| Tree renderer | ✔ built-in | not available |
+| Diff viewer | ✔ built-in | not available |
+| Status bar | ✔ built-in | not available |
+| Interactive prompts | ✔ built-in | inquirer — separate |
+| OSC 8 hyperlinks | ✔ built-in | not available |
+| Consistent palette | ✔ shared system | DIY |
+| TypeScript types | ✔ full .d.ts | varies |
+
+**Trade-off:** lumi-cli is opinionated — one palette, one style system. If you need 1000 Figlet fonts, a color picker widget, or complex form validation, use dedicated packages. If you want everything to just work, consistently, from one import — use lumi-cli.
+
+---
+
 ## License
 
-MIT
-```
-
+MIT — [github.com/nijil71/Lumi](https://github.com/nijil71/Lumi)

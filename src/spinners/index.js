@@ -3,6 +3,7 @@
 import { write, writeln, ansi, c as colors, isTTY, getColorTheme } from '../ansi.js';
 
 export const SPINNERS = {
+  // — originals —
   braille:  { interval: 80,  frames: ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'] },
   block:    { interval: 120, frames: ['▏','▎','▍','▌','▋','▊','▉','█','▉','▊','▋','▌','▍','▎'] },
   cross:    { interval: 150, frames: ['┼','╋','┿','╈','╉','╊','╋','┿','╇','╆','╅','╄','╃','╂'] },
@@ -15,6 +16,16 @@ export const SPINNERS = {
   signal:   { interval: 200, frames: ['·  ','·· ','···','·· ','·  ','   '] },
   clock:    { interval: 100, frames: ['🕛','🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚'] },
   morph:    { interval: 150, frames: ['◰','◳','◲','◱'] },
+
+  // — new —
+  arc:      { interval: 100, frames: ['◐','◓','◑','◒'] },
+  line:     { interval: 80,  frames: ['|','/','-','\\'] },
+  star:     { interval: 100, frames: ['✶','✸','✹','✺','✹','✷'] },
+  wave:     { interval: 80,  frames: ['▁▂▃▄▅▆▇█','▂▃▄▅▆▇█▇','▃▄▅▆▇█▇▆','▄▅▆▇█▇▆▅','▅▆▇█▇▆▅▄','▆▇█▇▆▅▄▃','▇█▇▆▅▄▃▂','█▇▆▅▄▃▂▁'] },
+  balloon:  { interval: 140, frames: ['.','o','O','@','*','O','o','.'] },
+  cyber:    { interval: 70,  frames: ['⣿','⣾','⣼','⣸','⢸','⡸','⡰','⡠','⡀','⢀','⣀','⣄','⣆','⣇','⣏','⣟'] },
+  flip:     { interval: 110, frames: ['_','_','_','-','`','\'','´','‾','-','_','_'] },
+  meter:    { interval: 100, frames: ['▱▱▱▱▱','▰▱▱▱▱','▰▰▱▱▱','▰▰▰▱▱','▰▰▰▰▱','▰▰▰▰▰','▰▰▰▰▱','▰▰▰▱▱','▰▰▱▱▱','▰▱▱▱▱'] },
 };
 
 // ─── SIGINT cleanup registry ──────────────────────────────────────────────

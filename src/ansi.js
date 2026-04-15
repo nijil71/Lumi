@@ -32,6 +32,10 @@ export const ansi = {
   // true color
   rgb:   (r, g, b)       => `${ESC}38;2;${r};${g};${b}m`,
   bgRgb: (r, g, b)       => `${ESC}48;2;${r};${g};${b}m`,
+
+  // OSC 8 clickable hyperlinks — supported in iTerm2, WezTerm, Windows Terminal, Kitty, GNOME Terminal 3.26+
+  // Falls back to plain visible text in unsupported terminals (escape sequences are silently ignored).
+  link:  (text, url)     => `\x1b]8;;${url}\x07${text}\x1b]8;;\x07`,
 };
 
 // ─── Environment detection ────────────────────────────────────────────────
@@ -159,6 +163,56 @@ export function cols() {
 export function rows() {
   return process.stdout.rows || 24;
 }
+
+// ─── Gradient text ────────────────────────────────────────────────────────
+
+/**
+ * Apply a left-to-right RGB gradient to a string.
+ * Falls back to plain text when color level < 3 (no truecolor).
+ *
+ * @param {string} text - Input text (ANSI codes are stripped before colorizing)
+ * @param {[number,number,number]} fromRGB - Start color as [r, g, b]
+ * @param {[number,number,number]} toRGB   - End color as [r, g, b]
+ * @returns {string} Gradient-colored string with reset at end
+ */
+export function gradient(text, fromRGB, toRGB) {
+  if (colorLevel() < 3) return text;
+  const chars = [...stripAnsiForGradient(text)];
+  const len = chars.length;
+  if (len === 0) return text;
+
+  let result = '';
+  for (let i = 0; i < len; i++) {
+    const t = len === 1 ? 0 : i / (len - 1);
+    const r = Math.round(fromRGB[0] + (toRGB[0] - fromRGB[0]) * t);
+    const g = Math.round(fromRGB[1] + (toRGB[1] - fromRGB[1]) * t);
+    const b = Math.round(fromRGB[2] + (toRGB[2] - fromRGB[2]) * t);
+    result += ansi.rgb(r, g, b) + chars[i];
+  }
+  return result + ansi.reset;
+}
+
+// Internal: strip ANSI before gradient (avoids forward-declare issue)
+function stripAnsiForGradient(str) {
+  return str.replace(/\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07]*\x07|\x1b[78]|\x1b\[[\?]?[0-9;]*[hlJK]/g, '');
+}
+
+/**
+ * Preset gradient pairs — pass as [fromRGB, toRGB] to gradient().
+ *
+ * @example
+ * writeln(gradient('Hello', ...GRADIENTS.neon));
+ */
+export const GRADIENTS = {
+  neon:    [[108, 71,  255], [0,   201, 167]],  // purple → teal
+  fire:    [[255, 71,  87],  [255, 185, 40 ]],  // red → amber
+  ice:     [[60,  160, 255], [155, 235, 255]],  // blue → sky
+  sunset:  [[255, 71,  87],  [180, 100, 255]],  // red → lavender
+  matrix:  [[0,   210, 90],  [0,   100, 40 ]],  // bright green → deep green
+  gold:    [[255, 200, 0  ], [255, 130, 40 ]],  // gold → orange
+  dawn:    [[255, 120, 180], [255, 185, 40 ]],  // pink → amber
+  ocean:   [[0,   180, 255], [0,   120, 180]],  // sky → deep blue
+};
 
 // ─── ANSI stripping & measurement ─────────────────────────────────────────
 

@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 export { ansi, c, write, writeln, cols, rows, stripAnsi, visibleLen, padEnd, truncate,
-         isTTY, colorLevel, getColorTheme }
+         isTTY, colorLevel, getColorTheme, gradient, GRADIENTS }
   from './ansi.js';
 
 export { Spinner, MultiSpinner, spinner, SPINNERS }
@@ -23,3 +23,18 @@ export { table }
 
 export { log, createLogger }
   from './logger/index.js';
+
+export { sparkline }
+  from './sparkline/index.js';
+
+export { tree }
+  from './tree/index.js';
+
+export { diff }
+  from './diff/index.js';
+
+export { StatusBar, statusBar }
+  from './statusbar/index.js';
+
+export { confirm, select, input }
+  from './prompt/index.js';

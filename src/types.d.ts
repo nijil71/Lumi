@@ -27,6 +27,8 @@ export declare const ansi: {
   bg(n: number): string;
   rgb(r: number, g: number, b: number): string;
   bgRgb(r: number, g: number, b: number): string;
+  /** OSC 8 clickable hyperlink. Falls back to plain text in unsupported terminals. */
+  link(text: string, url: string): string;
 };
 
 export declare const c: {
@@ -67,11 +69,35 @@ export declare function visibleLen(str: string): number;
 export declare function padEnd(str: string, width: number, char?: string): string;
 export declare function truncate(str: string, width: number): string;
 
+/** RGB tuple [r, g, b] where each value is 0–255. */
+export type RGB = [number, number, number];
+
+/**
+ * Apply a left-to-right truecolor gradient to a string.
+ * Falls back to plain text on terminals without truecolor support.
+ */
+export declare function gradient(text: string, fromRGB: RGB, toRGB: RGB): string;
+
+/** Built-in gradient presets. Spread into gradient(): `gradient(t, ...GRADIENTS.neon)` */
+export declare const GRADIENTS: {
+  neon:    [RGB, RGB];
+  fire:    [RGB, RGB];
+  ice:     [RGB, RGB];
+  sunset:  [RGB, RGB];
+  matrix:  [RGB, RGB];
+  gold:    [RGB, RGB];
+  dawn:    [RGB, RGB];
+  ocean:   [RGB, RGB];
+};
+
 // ─── Spinners ─────────────────────────────────────────────────────────────
 
 export type SpinnerType =
+  // originals
   | 'braille' | 'block' | 'cross' | 'orbital' | 'pulse' | 'dash'
-  | 'grid' | 'triangle' | 'snake' | 'signal' | 'clock' | 'morph';
+  | 'grid' | 'triangle' | 'snake' | 'signal' | 'clock' | 'morph'
+  // new
+  | 'arc' | 'line' | 'star' | 'wave' | 'balloon' | 'cyber' | 'flip' | 'meter';
 
 export type ColorName =
   | 'default' | 'chalk' | 'signal' | 'sage' | 'azure'
@@ -156,6 +182,8 @@ export declare class MultiBar {
 
 export interface BannerOptions {
   color?: ColorName;
+  /** Truecolor gradient: [fromRGB, toRGB]. Overrides `color` when supported. */
+  gradient?: [RGB, RGB];
   char?: string;
   gap?: number;
   align?: 'left' | 'center' | 'right';
@@ -257,3 +285,101 @@ export declare class Logger {
 
 export declare const log: Logger;
 export declare function createLogger(options?: LoggerOptions): Logger;
+
+// ─── Sparkline ────────────────────────────────────────────────────────────
+
+export interface SparklineOptions {
+  color?: ColorName;
+  min?: number;
+  max?: number;
+}
+
+/**
+ * Render an array of numbers as a compact inline block-character sparkline.
+ * Returns a colored string — no newline appended.
+ * @example log.kv('CPU', sparkline([12, 45, 78, 34, 90]));
+ */
+export declare function sparkline(values: number[], options?: SparklineOptions): string;
+
+// ─── Tree ─────────────────────────────────────────────────────────────────
+
+export type TreeNode = null | string[] | Record<string, TreeNode>;
+
+export interface TreeOptions {
+  color?: ColorName;
+  dirColor?: ColorName;
+  lineColor?: ColorName;
+}
+
+/**
+ * Render a nested object or array as a tree with box-drawing connectors.
+ * @example tree({ 'src/': { 'index.js': null }, 'package.json': null });
+ */
+export declare function tree(data: Record<string, TreeNode> | string[], options?: TreeOptions): void;
+
+// ─── Diff ─────────────────────────────────────────────────────────────────
+
+export interface DiffOptions {
+  context?: number;
+  oldLabel?: string;
+  newLabel?: string;
+  lineNumbers?: boolean;
+}
+
+/**
+ * Print a colored line-by-line diff between two strings.
+ * Added lines in green (+), removed in red (─), context lines in dim.
+ */
+export declare function diff(oldText: string, newText: string, options?: DiffOptions): void;
+
+// ─── StatusBar ────────────────────────────────────────────────────────────
+
+export interface StatusBarOptions {
+  left?: string;
+  center?: string;
+  right?: string;
+}
+
+/**
+ * A persistent status line pinned to the bottom row of the terminal.
+ * Uses cursor save/restore — never interrupts normal output.
+ */
+export declare class StatusBar {
+  constructor(options?: StatusBarOptions);
+  update(parts: Partial<StatusBarOptions>): this;
+  render(): this;
+  clear(): this;
+}
+
+export declare function statusBar(options?: StatusBarOptions): StatusBar;
+
+// ─── Prompt ───────────────────────────────────────────────────────────────
+
+export interface ConfirmOptions {
+  default?: boolean;
+}
+
+/** Ask a yes/no question. Returns `Promise<boolean>`. */
+export declare function confirm(message: string, options?: ConfirmOptions): Promise<boolean>;
+
+export type SelectChoice = string | { label: string; value: string };
+
+export interface SelectOptions {
+  default?: string;
+}
+
+/** Arrow-key selection from a list. Returns `Promise<string>`. */
+export declare function select(
+  message: string,
+  choices: SelectChoice[],
+  options?: SelectOptions
+): Promise<string>;
+
+export interface InputOptions {
+  default?: string;
+  placeholder?: string;
+  password?: boolean;
+}
+
+/** Free-text input prompt. Returns `Promise<string>`. */
+export declare function input(message: string, options?: InputOptions): Promise<string>;
