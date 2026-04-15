@@ -54,6 +54,5 @@
     "node": ">=18"
   },
   "dependencies": {
-    "lumi-cli": "^1.0.0"
   }
 }
