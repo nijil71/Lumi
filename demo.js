@@ -107,7 +107,7 @@ async function demoLogger() {
 
 async function demoSpinners() {
   sectionDivider('SPINNERS', GRADIENTS.fire);
-  header('26 animation types', 'every frame hand-crafted — including 6 cute pets');
+  header('27 animation types', 'every frame hand-crafted — including 7 cute pets');
 
   const types = [
     { type: 'braille',  text: 'braille — classic dots',      color: 'chalk',    dur: 800  },
@@ -145,15 +145,20 @@ async function demoSpinners() {
 // ─── Pet Spinners ─────────────────────────────────────────────────────────
 
 async function demoPetSpinners() {
-  header('pet spinners 🐾', 'adorable animated companions for your loading states');
+  header('pet spinners 🐾', 'premium kaomoji loaders — clean, expressive, pixel-perfect');
 
   const pets = [
-    { type: 'catWalk',      text: 'Compiling with cattitude…',    color: 'lavender', dur: 2200 },
-    { type: 'dogWag',       text: 'Fetching dependencies…',       color: 'amber',    dur: 2000 },
-    { type: 'bunnyHop',     text: 'Hopping through tests…',       color: 'sage',     dur: 2000 },
-    { type: 'fishSwim',     text: 'Swimming through data…',       color: 'azure',    dur: 2200 },
-    { type: 'birdFlap',     text: 'Deploying to the cloud…',      color: 'chalk',    dur: 2000 },
-    { type: 'turtleCrawl',  text: 'Patiently building assets…',   color: 'sage',     dur: 2200 },
+    { type: 'catChase',    text: 'Prowling through modules…',       color: 'lavender', dur: 1800 },
+    { type: 'dogFetch',    text: 'Chasing down memory leaks…',      color: 'amber',    dur: 1800 },
+    { type: 'bunnyEat',    text: 'Fetching dependencies…',          color: 'sage',     dur: 1800 },
+    { type: 'fishSwim',    text: 'Streaming build artifacts…',      color: 'azure',    dur: 1800 },
+    { type: 'bearHoney',   text: 'Deploying to the cloud…',         color: 'amber',    dur: 1800 },
+    { type: 'caterpillar', text: 'Patiently building assets…',      color: 'sage',     dur: 1800 },
+    { type: 'catWalk',     text: 'Stretching the multi-line cat…',  color: 'lavender', dur: 2800 },
+    { type: 'dogWag',      text: 'Wagging the multi-line dog…',     color: 'amber',    dur: 2800 },
+    { type: 'bunnyHop',    text: 'Hopping the multi-line bunny…',   color: 'sage',     dur: 2800 },
+    { type: 'birdFlap',    text: 'Flapping the multi-line bird…',   color: 'chalk',    dur: 2800 },
+    { type: 'turtleCrawl', text: 'Crawling the multi-line turtle…', color: 'sage',     dur: 3500 },
   ];
 
   for (const pet of pets) {

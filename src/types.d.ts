@@ -98,8 +98,10 @@ export type SpinnerType =
   | 'grid' | 'triangle' | 'snake' | 'signal' | 'clock' | 'morph'
   // new
   | 'arc' | 'line' | 'star' | 'wave' | 'balloon' | 'cyber' | 'flip' | 'meter'
-  // cute pets
-  | 'catWalk' | 'dogWag' | 'bunnyHop' | 'fishSwim' | 'birdFlap' | 'turtleCrawl';
+  // action pets
+  | 'catChase' | 'dogFetch' | 'bunnyEat' | 'fishSwim' | 'bearHoney' | 'caterpillar'
+  // multi-line pets
+  | 'catWalk' | 'dogWag' | 'bunnyHop' | 'birdFlap' | 'turtleCrawl';
 
 export type ColorName =
   | 'default' | 'chalk' | 'signal' | 'sage' | 'azure'

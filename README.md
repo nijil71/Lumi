@@ -45,7 +45,7 @@ import { spinner, ProgressBar, box, table, banner, log, gradient } from '@nijil7
 
 ```
 lumi-cli
-├── Spinners      26 types  ·  single + multi  ·  promise wrapper  ·  6 pet spinners
+├── Spinners      31 types  ·  single + multi  ·  promise wrapper  ·  11 pet spinners
 ├── Progress      6 styles  ·  single + multi  ·  ETA + rate
 ├── Box           6 borders ·  title + footer  ·  align + padding
 ├── Table         4 borders ·  per-col align   ·  truncation
@@ -103,7 +103,7 @@ await test();    multi.fail(c,    '3 failures');
 multi.stop();
 ```
 
-**26 spinner types** — including 6 cute multi-line pet spinners:
+**31 spinner types** — including 11 pet spinners:
 
 | name | preview | interval |
 |------|---------|----------|
@@ -130,25 +130,30 @@ multi.stop();
 
 ### Pet spinners 🐾
 
-Multi-line ASCII art animals that animate as your loading indicators. Because waiting should be fun.
+Action kaomojis and multi-line ASCII art animals that animate as your loading indicators. `lumi-cli` automatically handles multi-line cursor clearing and terminal rendering.
 
 ```js
-const sp = new Spinner({ type: 'catWalk', text: 'Compiling…', color: 'lavender' });
+const sp = new Spinner({ type: 'catChase', text: 'Building…', color: 'lavender' });
 sp.start();
-// ...
+// ... do work ...
 sp.succeed('Build complete');
 ```
 
-| name | description | interval |
-|------|-------------|----------|
-| `catWalk`      | 🐱 Walking cat with swaying paws    | 200ms |
-| `dogWag`       | 🐶 Happy dog wagging its tail       | 180ms |
-| `bunnyHop`     | 🐰 Bunny hopping along              | 200ms |
-| `fishSwim`     | 🐟 Fish swimming side to side       | 200ms |
-| `birdFlap`     | 🐦 Bird flapping its wings          | 150ms |
-| `turtleCrawl`  | 🐢 Turtle slowly crawling along     | 250ms |
+| name | style | description | interval |
+|------|-------|-------------|----------|
+| `catChase` | single-line | `(=^･ω･^=)` chasing a mouse (`🐁`) | 100ms |
+| `dogFetch` | single-line | `( ᐡ • ﻌ • ᐡ )` fetching a tennis ball | 150ms |
+| `bunnyEat` | single-line | `₍ᐢ•ﻌ•ᐢ₎` chewing on a carrot | 180ms |
+| `fishSwim` | single-line | `ϵ( 'Θ' )϶` swimming | 150ms |
+| `bearHoney`| single-line | `ʕ •ᴥ• ʔ` eating honey | 200ms |
+| `caterpillar`| single-line | `🐛` crawling like a wave | 80ms |
+| `catWalk` | multi-line | 🐱 Walking cat with swaying paws | 200ms |
+| `dogWag` | multi-line | 🐶 Dog wagging its tail | 180ms |
+| `bunnyHop` | multi-line | 🐰 Bunny hopping along | 200ms |
+| `birdFlap` | multi-line | 🐦 Bird flapping its wings | 150ms |
+| `turtleCrawl`| multi-line | 🐢 Turtle slowly crawling along | 250ms |
 
-Pet spinners render as multi-line ASCII art in the terminal with the status text displayed below. They automatically clean up on `succeed()`, `fail()`, `warn()`, `info()`, and `stop()`.
+Pet spinners automatically clean up on `succeed()`, `fail()`, `warn()`, `info()`, and `stop()`.
 
 ---
 
@@ -537,7 +542,7 @@ npx lumi --help
 |---|:---:|:---:|
 | Install size | **~30 KB** | ~150 KB+ |
 | Runtime deps | **0** | 15+ transitive |
-| Spinners | ✔ 26 types (+ 6 pets 🐾) | ora — separate |
+| Spinners | ✔ 31 types (+ 11 pets 🐾) | ora — separate |
 | Progress bars | ✔ 6 styles | cli-progress — separate |
 | Boxes | ✔ 6 borders | boxen — separate |
 | Tables | ✔ 4 borders | cli-table3 — separate |
