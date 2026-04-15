@@ -534,5 +534,4 @@ npx lumi --help
 ---
 
 ## License
-
-MIT — [github.com/nijil71/Lumi](https://github.com/nijil71/Lumi)
+This project is licensed under the [MIT License](LICENSE).
