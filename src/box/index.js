@@ -97,29 +97,33 @@ export function box(content, options = {}) {
     return line + ' '.repeat(spaces);
   }
 
+  const indentStr = options.indent || '';
+
   // Top border
   if (title) {
     const t = ` ${title} `;
     const sideLen = Math.floor((w - 2 - t.length) / 2);
     const r = w - 2 - sideLen - t.length;
     writeln(
+      indentStr +
       colorFn(border.tl + border.h.repeat(sideLen)) +
       `${colors.chalk}${colors.b}${t}${colors.r}` +
       colorFn(border.h.repeat(r) + border.tr)
     );
   } else {
-    writeln(colorFn(border.tl + border.h.repeat(w - 2) + border.tr));
+    writeln(indentStr + colorFn(border.tl + border.h.repeat(w - 2) + border.tr));
   }
 
   // Padding top
   for (let i = 0; i < Math.floor(padding / 2); i++) {
-    writeln(colorFn(border.v) + ' '.repeat(w - 2) + colorFn(border.v));
+    writeln(indentStr + colorFn(border.v) + ' '.repeat(w - 2) + colorFn(border.v));
   }
 
   // Content lines
   for (const line of wrapped) {
     const aligned = alignLine(line, innerWidth);
     writeln(
+      indentStr +
       colorFn(border.v) +
       pad + aligned + pad +
       colorFn(border.v)
@@ -128,14 +132,15 @@ export function box(content, options = {}) {
 
   // Padding bottom
   for (let i = 0; i < Math.floor(padding / 2); i++) {
-    writeln(colorFn(border.v) + ' '.repeat(w - 2) + colorFn(border.v));
+    writeln(indentStr + colorFn(border.v) + ' '.repeat(w - 2) + colorFn(border.v));
   }
 
   // Footer divider
   if (footer) {
-    writeln(colorFn(border.ml + border.h.repeat(w - 2) + border.mr));
+    writeln(indentStr + colorFn(border.ml + border.h.repeat(w - 2) + border.mr));
     const spaces = Math.max(0, innerWidth - stripAnsi(footer).length);
     writeln(
+      indentStr +
       colorFn(border.v) +
       pad + `${colors.slate}${footer}${colors.r}` + ' '.repeat(spaces) + pad +
       colorFn(border.v)
@@ -143,7 +148,7 @@ export function box(content, options = {}) {
   }
 
   // Bottom border
-  writeln(colorFn(border.bl + border.h.repeat(w - 2) + border.br));
+  writeln(indentStr + colorFn(border.bl + border.h.repeat(w - 2) + border.br));
 }
 
 // ─── Columns layout ───────────────────────────────────────────────────────

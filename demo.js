@@ -8,7 +8,7 @@ import {
   Spinner, MultiSpinner, SPINNERS,
   ProgressBar, MultiBar,
   log, createLogger,
-  c, ansi, writeln, write, cols,
+  c, ansi, writeln, write, cols, visibleLen,
   gradient, GRADIENTS,
   sparkline,
   tree,
@@ -33,7 +33,7 @@ async function typewriter(text, delay = 18) {
 }
 
 function sectionDivider(label, gradientPreset = GRADIENTS.neon) {
-  const w = Math.min(cols(), 88);
+  const w = cols();
   writeln();
   writeln(gradient('━'.repeat(w), ...gradientPreset));
   writeln(`  ${c.slate}${c.b}${label}${c.r}`);
@@ -49,9 +49,10 @@ async function splash() {
 
   banner('LUMI', { gradient: GRADIENTS.neon, align: 'center', char: '█', gap: 2 });
 
-  const tw = ' '.repeat(Math.max(0, Math.floor((Math.min(cols(), 88) - 34) / 2)));
+  const label = 'terminal ui · zero deps';
+  const tw = ' '.repeat(Math.max(0, Math.floor((cols() - label.length) / 2)));
   write(`${tw}${c.slate}`);
-  await typewriter('terminal ui · zero deps', fast ? 3 : 20);
+  await typewriter(label, fast ? 3 : 20);
   writeln();
 
   const stats = [
@@ -61,7 +62,9 @@ async function splash() {
     badge('MIT', { type: 'default' }),
     badge('ESM', { type: 'warning' }),
   ];
-  writeln('  ' + stats.join('  '));
+  const statsStr = stats.join('  ');
+  const sw = ' '.repeat(Math.max(0, Math.floor((cols() - visibleLen(statsStr)) / 2)));
+  writeln(sw + statsStr);
   writeln();
   await pause(280);
 }
@@ -550,22 +553,25 @@ async function demoPager() {
 // ─── Closer ───────────────────────────────────────────────────────────────
 
 async function closer() {
-  writeln(gradient('━'.repeat(Math.min(cols(), 88)), ...GRADIENTS.fire));
+  writeln(gradient('━'.repeat(cols()), ...GRADIENTS.fire));
   writeln();
 
   banner('DONE', { gradient: GRADIENTS.neon, align: 'center', gap: 2 });
 
+  const boxW = 46;
+  const boxIndent = ' '.repeat(Math.max(0, Math.floor((cols() - boxW) / 2)));
   box(
     [
       `  ${c.sage}$${c.r}  ${c.chalk}npm install @nijil71/lumi-cli${c.r}`,
       `  ${c.sage}$${c.r}  ${c.chalk}npx lumi demo${c.r}`,
     ],
-    { border: 'thick', color: 'lavender', title: 'GET STARTED', padding: 1, width: 46 }
+    { border: 'thick', color: 'lavender', title: 'GET STARTED', padding: 1, width: boxW, indent: boxIndent }
   );
   writeln();
 
-  const center = Math.max(0, Math.floor((Math.min(cols(), 88) - 24) / 2));
-  writeln(' '.repeat(center) + `${c.graphite}github.com/nijil71/Lumi${c.r}`);
+  const url = 'github.com/nijil71/Lumi';
+  const center = Math.max(0, Math.floor((cols() - url.length) / 2));
+  writeln(' '.repeat(center) + `${c.graphite}${url}${c.r}`);
   writeln();
   write(ansi.show());
 }
