@@ -284,3 +284,223 @@ export async function input(message, options = {}) {
 
   return result;
 }
+
+// ─── multiSelect ──────────────────────────────────────────────────────────
+
+/**
+ * Arrow-key multiple choice selection. Returns `Promise<string[]>`.
+ * Space to toggle, Enter to submit.
+ */
+export async function multiSelect(message, choices, options = {}) {
+  if (!choices || choices.length === 0) {
+    throw new Error('lumi multiSelect: choices must be a non-empty array');
+  }
+
+  const items = choices.map(c =>
+    typeof c === 'string' ? { label: c, value: c } : c
+  );
+  
+  const selectedValues = new Set(options.default || []);
+
+  if (!isTTY()) {
+    writeln(
+      `${colors.azure}?${colors.r} ${colors.b}${message}${colors.r} ` +
+      `${colors.slate}[non-interactive — using defaults]${colors.r}`
+    );
+    return Array.from(selectedValues);
+  }
+
+  write(ansi.hide());
+
+  let cursor = 0;
+  let linesDrawn = 0;
+
+  function render() {
+    if (linesDrawn > 0) {
+      write(ansi.up(linesDrawn) + ansi.col(1) + ansi.clearDown());
+    }
+
+    write(`${colors.azure}?${colors.r} ${colors.chalk}${colors.b}${message}${colors.r} ${colors.slate}(Space to toggle, Enter to confirm)${colors.r}\n`);
+
+    const MAX_ROWS = 10;
+    const startIndex = Math.max(0, Math.min(cursor - Math.floor(MAX_ROWS / 2), items.length - MAX_ROWS));
+    const slice = items.slice(startIndex, startIndex + MAX_ROWS);
+
+    for (let i = 0; i < slice.length; i++) {
+      const idx = startIndex + i;
+      const isSelected = selectedValues.has(slice[i].value);
+      const symbol = isSelected ? `${colors.sage}◉${colors.r}` : `${colors.slate}◯${colors.r}`;
+      
+      if (idx === cursor) {
+        write(`  ${colors.azure}❯${colors.r} ${symbol} ${colors.chalk}${slice[i].label}${colors.r}\n`);
+      } else {
+        write(`    ${symbol} ${colors.slate}${slice[i].label}${colors.r}\n`);
+      }
+    }
+
+    linesDrawn = slice.length + 1;
+  }
+
+  render();
+  const SPACE = ' ';
+
+  const finalSelection = await new Promise((resolve) => {
+    openRaw();
+
+    function listener(key) {
+      if (key === CTRL_C) {
+        process.stdin.removeListener('data', listener);
+        closeRaw();
+        write(ansi.up(linesDrawn) + ansi.col(1) + ansi.clearDown());
+        write(ansi.show() + '\n');
+        process.exit(130);
+      }
+      if (key === UP)   { cursor = (cursor - 1 + items.length) % items.length; render(); }
+      if (key === DOWN) { cursor = (cursor + 1)                % items.length; render(); }
+      if (key === SPACE) {
+        const val = items[cursor].value;
+        if (selectedValues.has(val)) selectedValues.delete(val);
+        else selectedValues.add(val);
+        render();
+      }
+      if (key === ENTER) {
+        process.stdin.removeListener('data', listener);
+        closeRaw();
+        resolve(Array.from(selectedValues));
+      }
+    }
+
+    process.stdin.on('data', listener);
+  });
+
+  write(ansi.up(linesDrawn) + ansi.col(1) + ansi.clearDown());
+  const selectedLabels = items.filter(i => finalSelection.includes(i.value)).map(i => i.label).join(', ');
+  writeln(
+    `${colors.sage}✔${colors.r} ${colors.chalk}${colors.b}${message}${colors.r}  ` +
+    `${colors.azure}${selectedLabels || 'none'}${colors.r}`
+  );
+  write(ansi.show());
+
+  return finalSelection;
+}
+
+// ─── autocomplete ─────────────────────────────────────────────────────────
+
+/**
+ * Filterable choice selection. Returns `Promise<string>`.
+ */
+export async function autocomplete(message, choices) {
+  if (!choices || choices.length === 0) {
+    throw new Error('lumi autocomplete: choices must be a non-empty array');
+  }
+
+  const allItems = choices.map(c =>
+    typeof c === 'string' ? { label: c, value: c } : c
+  );
+
+  if (!isTTY()) {
+    writeln(
+      `${colors.azure}?${colors.r} ${colors.b}${message}${colors.r} ` +
+      `${colors.slate}[non-interactive — using: ${allItems[0].label}]${colors.r}`
+    );
+    return allItems[0].value;
+  }
+
+  write(ansi.hide());
+
+  let cursor = 0;
+  let query = '';
+  let filtered = [...allItems];
+  let linesDrawn = 0;
+
+  function render() {
+    if (linesDrawn > 0) {
+      write(ansi.up(linesDrawn) + ansi.col(1) + ansi.clearDown());
+    }
+
+    write(`${colors.azure}?${colors.r} ${colors.chalk}${colors.b}${message}${colors.r} ` +
+      `${colors.graphite}›${colors.r} ${colors.chalk}${query}${colors.b}_${colors.r}\n`);
+
+    const MAX_ROWS = 7;
+    const startIndex = Math.max(0, Math.min(cursor - Math.floor(MAX_ROWS / 2), filtered.length - MAX_ROWS));
+    const slice = filtered.slice(startIndex, startIndex + MAX_ROWS);
+
+    for (let i = 0; i < slice.length; i++) {
+        const idx = startIndex + i;
+        if (idx === cursor) {
+          write(`  ${colors.azure}❯${colors.r} ${colors.chalk}${slice[i].label}${colors.r}\n`);
+        } else {
+          write(`  ${colors.slate}  ${slice[i].label}${colors.r}\n`);
+        }
+    }
+    
+    if (filtered.length === 0) {
+      write(`  ${colors.signal}  No matches found.${colors.r}\n`);
+      linesDrawn = 2; // message + 1 for 'no matches'
+    } else {
+      linesDrawn = slice.length + 1;
+    }
+  }
+
+  render();
+
+  const selected = await new Promise((resolve) => {
+    openRaw();
+
+    function listener(key) {
+      if (key === CTRL_C) {
+        process.stdin.removeListener('data', listener);
+        closeRaw();
+        write(ansi.up(linesDrawn) + ansi.col(1) + ansi.clearDown());
+        write(ansi.show() + '\n');
+        process.exit(130);
+      }
+      
+      let needsRender = false;
+      
+      if (key === UP) {
+        cursor = filtered.length ? (cursor - 1 + filtered.length) % filtered.length : 0;
+        needsRender = true;
+      } else if (key === DOWN) {
+        cursor = filtered.length ? (cursor + 1) % filtered.length : 0;
+        needsRender = true;
+      } else if (key === ENTER) {
+        if (filtered.length > 0) {
+          process.stdin.removeListener('data', listener);
+          closeRaw();
+          resolve(filtered[cursor].value);
+        }
+        return;
+      } else if (key === BSP || key === CTRL_H) {
+        if (query.length > 0) {
+          const chars = [...query];
+          chars.pop();
+          query = chars.join('');
+          filtered = allItems.filter(i => i.label.toLowerCase().includes(query.toLowerCase()));
+          cursor = 0;
+          needsRender = true;
+        }
+      } else if (key.length === 1 && key >= ' ') {
+        query += key;
+        filtered = allItems.filter(i => i.label.toLowerCase().includes(query.toLowerCase()));
+        cursor = 0;
+        needsRender = true;
+      }
+      
+      if (needsRender) render();
+    }
+
+    process.stdin.on('data', listener);
+  });
+
+  write(ansi.up(linesDrawn) + ansi.col(1) + ansi.clearDown());
+  const selectedLabel = allItems.find(i => i.value === selected).label;
+  writeln(
+    `${colors.sage}✔${colors.r} ${colors.chalk}${colors.b}${message}${colors.r}  ` +
+    `${colors.azure}${selectedLabel}${colors.r}`
+  );
+  write(ansi.show());
+
+  return selected;
+}
+

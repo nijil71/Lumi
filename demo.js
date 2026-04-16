@@ -14,7 +14,7 @@ import {
   tree,
   diff,
   StatusBar,
-  confirm, select, input,
+  confirm, select, input, multiSelect, autocomplete, TaskRunner, pager,
 } from './src/index.js';
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -484,6 +484,69 @@ async function demoLinks() {
   writeln();
 }
 
+// ─── Advanced Prompts ───────────────────────────────────────────────────────
+
+async function demoPromptAdvanced() {
+  sectionDivider('ADVANCED PROMPTS');
+  write(ansi.show());
+
+  const choices = ['TypeScript', 'JavaScript', 'Python', 'Rust', 'Go', 'Zig'];
+  const favs = await multiSelect('Which languages do you like?', choices, { default: ['Rust', 'TypeScript'] });
+
+  writeln();
+
+  const cloud = ['AWS', 'GCP', 'Azure', 'Vercel', 'Netlify', 'Render', 'Heroku', 'Fly.io'];
+  const deploy = await autocomplete('Where do you want to deploy? (Type to search)', cloud);
+
+  write(ansi.hide());
+}
+
+// ─── TaskRunner ─────────────────────────────────────────────────────────────
+
+async function demoTasks() {
+  sectionDivider('TASK RUNNER');
+
+  const runner = new TaskRunner([
+    {
+      title: 'Validating configuration',
+      task: async (ctx, task) => {
+        await sleep(600);
+        ctx.valid = true;
+      }
+    },
+    {
+      title: 'Fetching container image',
+      task: async (ctx, task) => {
+        task.text = 'Pulling layers...';
+        await sleep(500);
+        task.text = 'Extracting binaries...';
+        await sleep(500);
+      }
+    },
+    {
+      title: 'Pre-flight checks',
+      task: async (ctx, task) => {
+        throw new Error('Port 8080 is already in use.');
+      }
+    }
+  ], { exitOnError: false });
+
+  await runner.run();
+}
+
+// ─── Pager ──────────────────────────────────────────────────────────────────
+
+async function demoPager() {
+  sectionDivider('PAGER');
+
+  const lines = Array.from({ length: 300 }, (_, i) => `${c.dim}${i + 1}${c.r}  [SYS] System log entry - heartbeat check ok - load avg: ${(Math.random() * 2).toFixed(2)}`);
+
+  writeln(`${c.slate}Launching pager in 1s...${c.r}`);
+  await sleep(1000);
+
+  await pager(lines, { title: 'v1.0.7 System Logs' });
+}
+
 // ─── Closer ───────────────────────────────────────────────────────────────
 
 async function closer() {
@@ -494,7 +557,7 @@ async function closer() {
 
   box(
     [
-      `  ${c.sage}$${c.r}  ${c.chalk}npm install lumi-cli${c.r}`,
+      `  ${c.sage}$${c.r}  ${c.chalk}npm install @nijil71/lumi-cli${c.r}`,
       `  ${c.sage}$${c.r}  ${c.chalk}npx lumi demo${c.r}`,
     ],
     { border: 'thick', color: 'lavender', title: 'GET STARTED', padding: 1, width: 46 }
@@ -527,6 +590,9 @@ const SECTIONS = {
   statusbar: demoStatusBar,
   links: demoLinks,
   prompts: demoPrompts,   // interactive — run with: node demo.js prompts
+  advancedprompts: demoPromptAdvanced, // interactive
+  tasks: demoTasks,
+  pager: demoPager,       // interactive
   closer: closer,
 };
 
@@ -544,8 +610,9 @@ async function demo() {
     // When running explicit sections, show() the cursor first if prompts section included
     for (const name of requested) await SECTIONS[name]();
   } else {
-    // Auto-run excludes interactive prompts section
-    const autoSections = Object.entries(SECTIONS).filter(([k]) => k !== 'prompts');
+    // Auto-run excludes interactive sections
+    const excludes = ['prompts', 'advancedprompts', 'pager'];
+    const autoSections = Object.entries(SECTIONS).filter(([k]) => !excludes.includes(k));
     for (const [, fn] of autoSections) await fn();
   }
 

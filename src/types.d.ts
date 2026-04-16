@@ -388,13 +388,22 @@ export type SelectChoice = string | { label: string; value: string };
 
 export interface SelectOptions {
   default?: string;
-}
-
 /** Arrow-key selection from a list. Returns `Promise<string>`. */
 export declare function select(
   message: string,
-  choices: SelectChoice[],
-  options?: SelectOptions
+  choices: Array<string | { label: string; value: string }>,
+  options?: { default?: string }
+): Promise<string>;
+
+export declare function multiSelect(
+  message: string,
+  choices: Array<string | { label: string; value: string }>,
+  options?: { default?: string[] }
+): Promise<string[]>;
+
+export declare function autocomplete(
+  message: string,
+  choices: Array<string | { label: string; value: string }>
 ): Promise<string>;
 
 export interface InputOptions {
@@ -404,4 +413,51 @@ export interface InputOptions {
 }
 
 /** Free-text input prompt. Returns `Promise<string>`. */
-export declare function input(message: string, options?: InputOptions): Promise<string>;
+export declare function input(
+  message: string,
+  options?: InputOptions
+): Promise<string>;
+
+// ─── TaskRunner ────────────────────────────────────────────────────────
+export interface TaskContext {
+  [key: string]: any;
+}
+
+export interface TaskControls {
+  text: string;
+}
+
+export interface TaskConfig {
+  title: string;
+  task: (ctx: TaskContext, task: TaskControls) => Promise<void> | void;
+}
+
+export interface TaskRunnerOptions {
+  spinner?: SpinnerType;
+  color?: ColorName;
+  exitOnError?: boolean;
+}
+
+export declare class TaskRunner {
+  constructor(tasks: TaskConfig[], options?: TaskRunnerOptions);
+  run(): Promise<TaskContext>;
+}
+
+export declare function taskRunner(
+  tasks: TaskConfig[],
+  options?: TaskRunnerOptions
+): TaskRunner;
+
+// ─── Pager ─────────────────────────────────────────────────────────────
+export interface PagerOptions {
+  title?: string;
+}
+
+/** 
+ * Enters an alternate screen buffer to paginate large amounts of text. 
+ * Supports arrow keys, page up/down, j/k, and q to quit.
+ */
+export declare function pager(
+  text: string | string[],
+  options?: PagerOptions
+): Promise<void>;

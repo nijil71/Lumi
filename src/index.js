@@ -36,5 +36,11 @@ export { diff }
 export { StatusBar, statusBar }
   from './statusbar/index.js';
 
-export { confirm, select, input }
+export { confirm, select, input, multiSelect, autocomplete }
   from './prompt/index.js';
+
+export { TaskRunner, taskRunner }
+  from './task/index.js';
+
+export { pager }
+  from './pager/index.js';

@@ -49,14 +49,15 @@ lumi-cli
 ├── Progress      6 styles  ·  single + multi  ·  ETA + rate
 ├── Box           6 borders ·  title + footer  ·  align + padding
 ├── Table         4 borders ·  per-col align   ·  truncation
-├── Banner        block-letter ASCII art  ·  gradient support
-├── Logger        info/success/warn/error/debug · kv · step
-├── Gradient      truecolor left→right · 8 built-in presets
-├── Sparkline     inline block-char mini-charts
-├── Tree          nested object/file tree renderer
-├── Diff          LCS-based colored line diff
-├── StatusBar     persistent bottom-of-terminal status line
-├── Prompts       confirm · select · input  (zero-dep, arrow keys)
+├── Banner        2 styles  ·  figlet + block  ·  gradients
+├── Logger        5 levels  ·  tags + badges   ·  timestamps
+├── Tree          file tree ·  connectors      ·  colors
+├── Diff          inline    ·  added + removed ·  word-diff
+├── Sparkline     bar chart ·  min/max + NaN   ·  colors
+├── StatusBar     sticky    ·  left + right    ·  updates
+├── Tasks         runner    ·  orchestrator    ·  graceful fails
+├── Pager         raw mode  ·  terminal paginator · zero deps
+└── Prompts       input, select, multiSelect, autocomplete, confirm
 └── Utils         ANSI primitives · OSC 8 links · TTY detection
 ```
 
@@ -536,12 +537,15 @@ npx lumi --help
 |---|:---:|:---:|
 | Install size | **~30 KB** | ~150 KB+ |
 | Runtime deps | **0** | 15+ transitive |
-| Spinners | ✔ 25 types (+ 11 pets 🐾) | ora — separate |
+| Prompts | ✔ 5 types (`input`, `select`, `multiSelect`, `autocomplete`, `confirm`) | prompts — separate |
+| Task Runner | ✔ `TaskRunner` | listr2 — 30+ transitive |
+| Pager | ✔ Alternate screen `pager` | less - external |
 | Progress bars | ✔ 6 styles | cli-progress — separate |
 | Boxes | ✔ 6 borders | boxen — separate |
 | Tables | ✔ 4 borders | cli-table3 — separate |
 | ASCII banners | ✔ custom glyphs | figlet — 2.8 MB |
 | Gradient text | ✔ built-in | not available |
+| Spinners | ✔ 25 types (+ 11 pets 🐾) | ora — separate |
 | Sparklines | ✔ built-in | not available |
 | Tree renderer | ✔ built-in | not available |
 | Diff viewer | ✔ built-in | not available |
