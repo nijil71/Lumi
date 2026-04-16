@@ -176,10 +176,7 @@ export class Spinner {
     if (isTTY()) {
       if (this._multiLine && this._renderedLines > 0) {
         write(ansi.up(this._renderedLines));
-        for (let i = 0; i <= this._renderedLines; i++) {
-          write(ansi.col(1) + ansi.clearLine() + '\n');
-        }
-        write(ansi.up(this._renderedLines + 1));
+        write(ansi.clearDown());
       }
       write(ansi.col(1) + ansi.clearLine());
     }
@@ -193,10 +190,7 @@ export class Spinner {
     if (isTTY()) {
       if (this._multiLine && this._renderedLines > 0) {
         write(ansi.up(this._renderedLines));
-        for (let i = 0; i <= this._renderedLines; i++) {
-          write(ansi.col(1) + ansi.clearLine() + '\n');
-        }
-        write(ansi.up(this._renderedLines + 1));
+        write(ansi.clearDown());
       }
       write(ansi.col(1) + ansi.clearLine());
     }
