@@ -20,7 +20,7 @@ Terminal UI toolkit for Node.js — spinners, progress bars, tables, boxes, bann
 ## See it in action
 
 ```bash
-npx lumi demo
+npx @nijil71/lumi-cli demo
 ```
 
 Runs without installing. Shows every component live in your terminal.
