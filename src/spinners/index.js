@@ -3,39 +3,35 @@
 import { write, writeln, ansi, c as colors, isTTY, getColorTheme } from '../ansi.js';
 
 export const SPINNERS = {
-  // — originals —
+  // ── core classics (earn their place) ──────────────────────────────────
+
   braille:  { interval: 80,  frames: ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'] },
-  block:    { interval: 120, frames: ['▏','▎','▍','▌','▋','▊','▉','█','▉','▊','▋','▌','▍','▎'] },
-  cross:    { interval: 150, frames: ['┼','╋','┿','╈','╉','╊','╋','┿','╇','╆','╅','╄','╃','╂'] },
-  orbital:  { interval: 100, frames: ['◜','◝','◞','◟'] },
-  pulse:    { interval: 180, frames: ['·','•','●','◉','●','•','·'] },
-  dash:     { interval: 90,  frames: ['▰▱▱▱▱▱▱','▰▰▱▱▱▱▱','▰▰▰▱▱▱▱','▰▰▰▰▱▱▱','▰▰▰▰▰▱▱','▰▰▰▰▰▰▱','▰▰▰▰▰▰▰','▱▰▰▰▰▰▰','▱▱▰▰▰▰▰','▱▱▱▰▰▰▰','▱▱▱▱▰▰▰','▱▱▱▱▱▰▰','▱▱▱▱▱▱▰'] },
-  grid:     { interval: 130, frames: ['⣾','⣽','⣻','⢿','⡿','⣟','⣯','⣷'] },
-  triangle: { interval: 100, frames: ['◢','◣','◤','◥'] },
-  snake:    { interval: 70,  frames: ['⠁⠂⠄⡀⢀⠠⠐⠈','⠂⠄⡀⢀⠠⠐⠈⠁','⠄⡀⢀⠠⠐⠈⠁⠂','⡀⢀⠠⠐⠈⠁⠂⠄','⢀⠠⠐⠈⠁⠂⠄⡀','⠠⠐⠈⠁⠂⠄⡀⢀','⠐⠈⠁⠂⠄⡀⢀⠠','⠈⠁⠂⠄⡀⢀⠠⠐'] },
-  signal:   { interval: 200, frames: ['·  ','·· ','···','·· ','·  ','   '] },
-  clock:    { interval: 100, frames: ['🕛','🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚'] },
-  morph:    { interval: 150, frames: ['◰','◳','◲','◱'] },
-
-  // — new —
-  arc:      { interval: 100, frames: ['◐','◓','◑','◒'] },
   line:     { interval: 80,  frames: ['|','/','-','\\'] },
-  star:     { interval: 100, frames: ['✶','✸','✹','✺','✹','✷'] },
+  arc:      { interval: 100, frames: ['◐','◓','◑','◒'] },
+  grid:     { interval: 130, frames: ['⣾','⣽','⣻','⢿','⡿','⣟','⣯','⣷'] },
   wave:     { interval: 80,  frames: ['▁▂▃▄▅▆▇█','▂▃▄▅▆▇█▇','▃▄▅▆▇█▇▆','▄▅▆▇█▇▆▅','▅▆▇█▇▆▅▄','▆▇█▇▆▅▄▃','▇█▇▆▅▄▃▂','█▇▆▅▄▃▂▁'] },
-  balloon:  { interval: 140, frames: ['.','o','O','@','*','O','o','.'] },
   cyber:    { interval: 70,  frames: ['⣿','⣾','⣼','⣸','⢸','⡸','⡰','⡠','⡀','⢀','⣀','⣄','⣆','⣇','⣏','⣟'] },
-  flip:     { interval: 110, frames: ['_','_','_','-','`','\'','´','‾','-','_','_'] },
-  meter:    { interval: 100, frames: ['▱▱▱▱▱','▰▱▱▱▱','▰▰▱▱▱','▰▰▰▱▱','▰▰▰▰▱','▰▰▰▰▰','▰▰▰▰▱','▰▰▰▱▱','▰▰▱▱▱','▰▱▱▱▱'] },
+  snake:    { interval: 70,  frames: ['⠁⠂⠄⡀⢀⠠⠐⠈','⠂⠄⡀⢀⠠⠐⠈⠁','⠄⡀⢀⠠⠐⠈⠁⠂','⡀⢀⠠⠐⠈⠁⠂⠄','⢀⠠⠐⠈⠁⠂⠄⡀','⠠⠐⠈⠁⠂⠄⡀⢀','⠐⠈⠁⠂⠄⡀⢀⠠','⠈⠁⠂⠄⡀⢀⠠⠐'] },
+  bounce:   { interval: 90,  frames: ['⠁','⠂','⠄','⠂'] },
+  fade:     { interval: 110, frames: ['█','▓','▒','░','▒','▓'] },
+  slash:    { interval: 80,  frames: ['╱','╲','╱','╲'] },
+  grow:     { interval: 90,  frames: ['▏','▍','▋','█','▋','▍'] },
+  ripple:   { interval: 100, frames: ['·','∘','○','◯','○','∘'] },
+  runner:   { interval: 120, frames: ['ᗧ···','·ᗧ··','··ᗧ·','···ᗧ','···ᗧ','··ᗧ·','·ᗧ··','ᗧ···'] },
+  heartbeat:{ interval: 100, frames: ['♡','♥','♡','♡','♡'] },
 
-  // — action pets (single line, highly dynamic) —
-  catChase: { interval: 100, frames: ['(=^･ω･^=)       🐁', ' (=^･ω･^=)      🐁', '  (=^･ω･^=)     🐁', '   (=^･ω･^=)    🐁', '    (=^･ω･^=)   🐁', '     (=^･ω･^=)  🐁', '      (=^･ω･^=) 🐁', '       (=^>ω<^=)🐁', '       (=^>ω<^=)', '      (=^-ω-^=) ', '    (=^-ω-^=)   ', '  (=^-ω-^=)     '] },
-  dogFetch: { interval: 150, frames: ['( ᐡ • ﻌ • ᐡ )   🎾', '( ᐡ > ﻌ < ᐡ )  🎾 ', '( ᐡ • ﻌ • ᐡ ) 🎾  ', '( ᐡ > ﻌ < ᐡ )🎾   ', '( ᐡ ^ ﻌ ^ ᐡ )     ', '( ᐡ > ﻌ < ᐡ )🎾   ', '( ᐡ • ﻌ • ᐡ ) 🎾  ', '( ᐡ > ﻌ < ᐡ )  🎾 '] },
-  bunnyEat: { interval: 180, frames: ['₍ᐢ•ﻌ•ᐢ₎ 🥕', '₍ᐢ>ﻌ<ᐢ₎ 🥕', '₍ᐢ•ﻌ•ᐢ₎ 🥕', '₍ᐢ-ﻌ-ᐢ₎ 🥕', '₍ᐢ^ﻌ^ᐢ₎ 🥕', '₍ᐢ>ﻌ<ᐢ₎   '] },
-  fishSwim: { interval: 150, frames: ['     ϵ( \'Θ\' )϶  ', '   °  ϵ( °Θ° )϶ ', ' ∘  ° ϵ( \'Θ\' )϶ ', '   ∘  ϵ( °Θ° )϶ ', '     ϵ( >Θ< )϶  ', '     ϵ( \'Θ\' )϶  '] },
-  bearHoney:{ interval: 200, frames: ['ʕ •ᴥ• ʔ  🍯', 'ʕ >ᴥ< ʔ  🍯', 'ʕ ^ᴥ^ ʔ 🍯 ', 'ʕ -ᴥ- ʔ🍯  ', 'ʕ >ᴥ< ʔ    '] },
-  caterpillar:{ interval: 80, frames: ['🐛        ', ' 🐛       ', '  🐛      ', '   🐛     ', '    🐛    ', '     🐛   ', '      🐛  ', '       🐛 ', '        🐛'] },
 
-  // — multi-line pets (large, expressive) —
+  // ── action pets (single line, highly dynamic) ─────────────────────────
+
+  catChase:    { interval: 100, frames: ['(=^･ω･^=)       🐁',' (=^･ω･^=)      🐁','  (=^･ω･^=)     🐁','   (=^･ω･^=)    🐁','    (=^･ω･^=)   🐁','     (=^･ω･^=)  🐁','      (=^･ω･^=) 🐁','       (=^>ω<^=)🐁','       (=^>ω<^=)','      (=^-ω-^=) ','    (=^-ω-^=)   ','  (=^-ω-^=)     '] },
+  dogFetch:    { interval: 150, frames: ['( ᐡ • ﻌ • ᐡ )   🎾','( ᐡ > ﻌ < ᐡ )  🎾 ','( ᐡ • ﻌ • ᐡ ) 🎾  ','( ᐡ > ﻌ < ᐡ )🎾   ','( ᐡ ^ ﻌ ^ ᐡ )     ','( ᐡ > ﻌ < ᐡ )🎾   ','( ᐡ • ﻌ • ᐡ ) 🎾  ','( ᐡ > ﻌ < ᐡ )  🎾 '] },
+  bunnyEat:    { interval: 180, frames: ['₍ᐢ•ﻌ•ᐢ₎ 🥕','₍ᐢ>ﻌ<ᐢ₎ 🥕','₍ᐢ•ﻌ•ᐢ₎ 🥕','₍ᐢ-ﻌ-ᐢ₎ 🥕','₍ᐢ^ﻌ^ᐢ₎ 🥕','₍ᐢ>ﻌ<ᐢ₎   '] },
+  fishSwim:    { interval: 150, frames: ['     ϵ( \'Θ\' )϶  ','   °  ϵ( °Θ° )϶ ',' ∘  ° ϵ( \'Θ\' )϶ ','   ∘  ϵ( °Θ° )϶ ','     ϵ( >Θ< )϶  ','     ϵ( \'Θ\' )϶  '] },
+  bearHoney:   { interval: 200, frames: ['ʕ •ᴥ• ʔ  🍯','ʕ >ᴥ< ʔ  🍯','ʕ ^ᴥ^ ʔ 🍯 ','ʕ -ᴥ- ʔ🍯  ','ʕ >ᴥ< ʔ    '] },
+  caterpillar: { interval: 80,  frames: ['🐛        ',' 🐛       ','  🐛      ','   🐛     ','    🐛    ','     🐛   ','      🐛  ','       🐛 ','        🐛'] },
+
+  // ── multi-line pets (large, expressive) ──────────────────────────────
+
   catWalk: { interval: 200, frames: [
     '  /\\_/\\  \n =( °w° )=\n  )   ( //\n (__ __)// ',
     '  /\\_/\\  \n =( °w° )=\n \\\\)   (  \n \\\\(__ __) ',
@@ -68,6 +64,7 @@ export const SPINNERS = {
     '    _____     \n  /       \\   \n |  °  °  |_  \n |   __   / \\ \n  \\_____/  ︢ ︢',
   ]},
 };
+
 
 // ─── SIGINT cleanup registry ──────────────────────────────────────────────
 // All active spinners register here so Ctrl+C restores the cursor.
@@ -105,7 +102,6 @@ export class Spinner {
     this._prefix  = options.prefix || '';
     this._elapsed = options.elapsed || false;
     this._startMs = null;
-    // Multi-line support for pet spinners
     this._multiLine = this._def.frames.some(f => f.includes('\n'));
     this._renderedLines = 0;
   }
@@ -121,7 +117,6 @@ export class Spinner {
     }
 
     if (this._multiLine) {
-      // Multi-line pet spinner: clear previous frame, then draw each line
       if (this._renderedLines > 0) {
         write(ansi.up(this._renderedLines));
       }
@@ -129,7 +124,6 @@ export class Spinner {
       for (let i = 0; i < lines.length; i++) {
         write(ansi.col(1) + ansi.clearLine() + `  ${this._colorFn(lines[i])}` + '\n');
       }
-      // Print status text on its own line below the pet
       write(ansi.col(1) + ansi.clearLine() + `${prefix}${colors.fog}⠿${colors.r}${text}`);
       this._renderedLines = lines.length;
     } else {
@@ -143,7 +137,6 @@ export class Spinner {
     if (text !== undefined) this._text = text;
     this._startMs = Date.now();
 
-    // Non-TTY: skip animation entirely
     if (!isTTY()) {
       return this;
     }
@@ -152,10 +145,9 @@ export class Spinner {
     activeInstances.add(this);
     write(ansi.hide());
 
-    // Pre-allocate lines for multi-line spinners so first render doesn't jump
     if (this._multiLine) {
       const frameLines = this._def.frames[0].split('\n').length;
-      for (let i = 0; i < frameLines + 1; i++) write('\n'); // +1 for status text line
+      for (let i = 0; i < frameLines + 1; i++) write('\n');
       this._renderedLines = frameLines;
     }
 
@@ -182,7 +174,6 @@ export class Spinner {
     }
 
     if (isTTY()) {
-      // Clear all lines from a multi-line pet spinner
       if (this._multiLine && this._renderedLines > 0) {
         write(ansi.up(this._renderedLines));
         for (let i = 0; i <= this._renderedLines; i++) {
@@ -200,7 +191,6 @@ export class Spinner {
     clearInterval(this._timer);
     activeInstances.delete(this);
     if (isTTY()) {
-      // Clear all lines from a multi-line pet spinner
       if (this._multiLine && this._renderedLines > 0) {
         write(ansi.up(this._renderedLines));
         for (let i = 0; i <= this._renderedLines; i++) {
@@ -213,10 +203,6 @@ export class Spinner {
     write(ansi.show());
   }
 
-  /**
-   * Wrap a promise — start spinner, resolve/reject, print result.
-   * Usage: await Spinner.promise(fetchData(), { text: 'Fetching...' })
-   */
   static async promise(promise, options = {}) {
     const sp = new Spinner(options);
     sp.start();
@@ -287,7 +273,6 @@ export class MultiSpinner {
   }
 
   start() {
-    // Non-TTY: skip animation
     if (!isTTY()) {
       return this;
     }
@@ -309,7 +294,6 @@ export class MultiSpinner {
     if (isTTY()) {
       this._renderAll();
     } else {
-      // Non-TTY: print final states
       for (const s of this._spinners) {
         const sym = s.symbol || (s.status === 'spinning' ? '·' : '✔');
         writeln(`  ${sym} ${s.text}`);

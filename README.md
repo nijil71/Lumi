@@ -45,7 +45,7 @@ import { spinner, ProgressBar, box, table, banner, log, gradient } from '@nijil7
 
 ```
 lumi-cli
-├── Spinners      31 types  ·  single + multi  ·  promise wrapper  ·  11 pet spinners
+├── Spinners      25 types  ·  single + multi  ·  promise wrapper  ·  11 pet spinners
 ├── Progress      6 styles  ·  single + multi  ·  ETA + rate
 ├── Box           6 borders ·  title + footer  ·  align + padding
 ├── Table         4 borders ·  per-col align   ·  truncation
@@ -103,55 +103,49 @@ await test();    multi.fail(c,    '3 failures');
 multi.stop();
 ```
 
-**31 spinner types** — including 11 pet spinners:
+**25 spinner types** — including 11 pet spinners:
 
 | name | preview | interval |
 |------|---------|----------|
 | `braille`  | ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏     | 80ms  |
-| `wave`     | ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁  | 80ms  |
-| `dash`     | ▰▰▰▱▱▱▱ → ▰▰▰▰▰▰▰ | 90ms  |
-| `cyber`    | ⣿⣾⣼⣸⢸⡸⡰⡠⡀ …     | 70ms  |
-| `arc`      | ◐◓◑◒               | 100ms |
-| `block`    | ▏▎▍▌▋▊▉█▉▊▋▌▍▎    | 120ms |
-| `orbital`  | ◜◝◞◟               | 100ms |
-| `pulse`    | ·•●◉●•·            | 180ms |
-| `grid`     | ⣾⣽⣻⢿⡿⣟⣯⣷         | 130ms |
-| `triangle` | ◢◣◤◥               | 100ms |
-| `snake`    | ⠁⠂⠄⡀⢀⠠⠐⠈ …       | 70ms  |
-| `signal`   | · ·· ···           | 200ms |
-| `morph`    | ◰◳◲◱               | 150ms |
-| `cross`    | ┼╋┿╈╉╊ …           | 150ms |
-| `clock`    | 🕛🕐🕑🕒 …         | 100ms |
-| `star`     | ✶✸✹✺✹✷             | 100ms |
-| `balloon`  | .oO@*O o.          | 140ms |
 | `line`     | \|/─\\             | 80ms  |
-| `flip`     | _ _ - ` ′ ‾ - _   | 110ms |
-| `meter`    | ▱▱▱▱▱ → ▰▰▰▰▰      | 100ms |
+| `arc`      | ◐◓◑◒               | 100ms |
+| `grid`     | ⣾⣽⣻⢿⡿⣟⣯⣷         | 130ms |
+| `wave`     | ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁  | 80ms  |
+| `cyber`    | ⣿⣾⣼⣸⢸⡸⡰⡠⡀ …     | 70ms  |
+| `snake`    | ⠁⠂⠄⡀⢀⠠⠐⠈ …       | 70ms  |
+| `bounce`   | ⠁⠂⠄⠂               | 90ms  |
+| `fade`     | █▓▒░               | 110ms |
+| `slash`    | ╱╲                 | 80ms  |
+| `grow`     | ▏▍▋█               | 90ms  |
+| `ripple`   | ·∘○◯               | 100ms |
+| `runner`   | ᗧ···               | 120ms |
+| `heartbeat`| ♡♥♡                | 100ms |
 
 ### Pet spinners 🐾
 
-Action kaomojis and multi-line ASCII art animals that animate as your loading indicators. `lumi-cli` automatically handles multi-line cursor clearing and terminal rendering.
+Action kaomojis (single-line) and large ASCII art animals (multi-line) that animate as your loading indicators. `lumi-cli` automatically handles multi-line rendering and cursor management.
 
 ```js
-const sp = new Spinner({ type: 'catChase', text: 'Building…', color: 'lavender' });
+const sp = new Spinner({ type: 'catChase', text: 'Processing…', color: 'lavender' });
 sp.start();
-// ... do work ...
-sp.succeed('Build complete');
+// ...
+sp.succeed('Done');
 ```
 
 | name | style | description | interval |
 |------|-------|-------------|----------|
-| `catChase` | single-line | `(=^･ω･^=)` chasing a mouse (`🐁`) | 100ms |
-| `dogFetch` | single-line | `( ᐡ • ﻌ • ᐡ )` fetching a tennis ball | 150ms |
-| `bunnyEat` | single-line | `₍ᐢ•ﻌ•ᐢ₎` chewing on a carrot | 180ms |
-| `fishSwim` | single-line | `ϵ( 'Θ' )϶` swimming | 150ms |
-| `bearHoney`| single-line | `ʕ •ᴥ• ʔ` eating honey | 200ms |
-| `caterpillar`| single-line | `🐛` crawling like a wave | 80ms |
-| `catWalk` | multi-line | 🐱 Walking cat with swaying paws | 200ms |
-| `dogWag` | multi-line | 🐶 Dog wagging its tail | 180ms |
-| `bunnyHop` | multi-line | 🐰 Bunny hopping along | 200ms |
-| `birdFlap` | multi-line | 🐦 Bird flapping its wings | 150ms |
-| `turtleCrawl`| multi-line | 🐢 Turtle slowly crawling along | 250ms |
+| `catChase`    | single | `(=^･ω･^=)` chasing a mouse (`🐁`) | 100ms |
+| `dogFetch`    | single | `( ᐡ • ﻌ • ᐡ )` fetching a ball | 150ms |
+| `bunnyEat`    | single | `₍ᐢ•ﻌ•ᐢ₎` chewing on a carrot | 180ms |
+| `fishSwim`    | single | `ϵ( 'Θ' )϶` swimming through bubbles | 150ms |
+| `bearHoney`   | single | `ʕ •ᴥ• ʔ` bouncing to eat honey | 200ms |
+| `caterpillar` | single | `🐛` smoothly crawling across | 80ms |
+| `catWalk`     | multi  | 🐱 Stretching cat animation      | 200ms |
+| `dogWag`      | multi  | 🐶 Dog wagging its tail         | 180ms |
+| `bunnyHop`    | multi  | 🐰 Bunny hopping in place       | 200ms |
+| `birdFlap`    | multi  | 🐦 Bird flapping its wings      | 150ms |
+| `turtleCrawl` | multi  | 🐢 Turtle crawling along        | 250ms |
 
 Pet spinners automatically clean up on `succeed()`, `fail()`, `warn()`, `info()`, and `stop()`.
 
@@ -542,7 +536,7 @@ npx lumi --help
 |---|:---:|:---:|
 | Install size | **~30 KB** | ~150 KB+ |
 | Runtime deps | **0** | 15+ transitive |
-| Spinners | ✔ 31 types (+ 11 pets 🐾) | ora — separate |
+| Spinners | ✔ 25 types (+ 11 pets 🐾) | ora — separate |
 | Progress bars | ✔ 6 styles | cli-progress — separate |
 | Boxes | ✔ 6 borders | boxen — separate |
 | Tables | ✔ 4 borders | cli-table3 — separate |

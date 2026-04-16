@@ -80,28 +80,46 @@ export declare function gradient(text: string, fromRGB: RGB, toRGB: RGB): string
 
 /** Built-in gradient presets. Spread into gradient(): `gradient(t, ...GRADIENTS.neon)` */
 export declare const GRADIENTS: {
-  neon:    [RGB, RGB];
-  fire:    [RGB, RGB];
-  ice:     [RGB, RGB];
-  sunset:  [RGB, RGB];
-  matrix:  [RGB, RGB];
-  gold:    [RGB, RGB];
-  dawn:    [RGB, RGB];
-  ocean:   [RGB, RGB];
+  neon: [RGB, RGB];
+  fire: [RGB, RGB];
+  ice: [RGB, RGB];
+  sunset: [RGB, RGB];
+  matrix: [RGB, RGB];
+  gold: [RGB, RGB];
+  dawn: [RGB, RGB];
+  ocean: [RGB, RGB];
 };
 
 // ─── Spinners ─────────────────────────────────────────────────────────────
-
 export type SpinnerType =
-  // originals
-  | 'braille' | 'block' | 'cross' | 'orbital' | 'pulse' | 'dash'
-  | 'grid' | 'triangle' | 'snake' | 'signal' | 'clock' | 'morph'
-  // new
-  | 'arc' | 'line' | 'star' | 'wave' | 'balloon' | 'cyber' | 'flip' | 'meter'
-  // action pets
-  | 'catChase' | 'dogFetch' | 'bunnyEat' | 'fishSwim' | 'bearHoney' | 'caterpillar'
+  // core classics
+  | 'braille'
+  | 'line'
+  | 'arc'
+  | 'grid'
+  | 'wave'
+  | 'cyber'
+  | 'snake'
+  | 'bounce'
+  | 'fade'
+  | 'slash'
+  | 'grow'
+  | 'ripple'
+  | 'runner'
+  | 'heartbeat'
+  // action pets (single-line)
+  | 'catChase'
+  | 'dogFetch'
+  | 'bunnyEat'
+  | 'fishSwim'
+  | 'bearHoney'
+  | 'caterpillar'
   // multi-line pets
-  | 'catWalk' | 'dogWag' | 'bunnyHop' | 'birdFlap' | 'turtleCrawl';
+  | 'catWalk'
+  | 'dogWag'
+  | 'bunnyHop'
+  | 'birdFlap'
+  | 'turtleCrawl';
 
 export type ColorName =
   | 'default' | 'chalk' | 'signal' | 'sage' | 'azure'

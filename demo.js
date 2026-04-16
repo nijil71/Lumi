@@ -18,8 +18,8 @@ import {
 } from './src/index.js';
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-const slow  = process.argv.includes('--slow');
-const fast  = process.argv.includes('--fast');
+const slow = process.argv.includes('--slow');
+const fast = process.argv.includes('--fast');
 const pause = (ms) => fast ? sleep(Math.min(ms, 15)) : slow ? sleep(ms) : sleep(Math.min(ms, 70));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -55,11 +55,11 @@ async function splash() {
   writeln();
 
   const stats = [
-    badge('30 KB',    { type: 'default' }),
-    badge('0 deps',   { type: 'success' }),
-    badge('Node ≥18', { type: 'info'    }),
-    badge('MIT',      { type: 'default' }),
-    badge('ESM',      { type: 'warning' }),
+    badge('30 KB', { type: 'default' }),
+    badge('0 deps', { type: 'success' }),
+    badge('Node ≥18', { type: 'info' }),
+    badge('MIT', { type: 'default' }),
+    badge('ESM', { type: 'warning' }),
   ];
   writeln('  ' + stats.join('  '));
   writeln();
@@ -86,12 +86,12 @@ async function demoLogger() {
 
   header('key-value pairs', 'aligned, monochrome, scannable');
   log
-    .kv('NODE_ENV',   'production')
-    .kv('REGION',     'ap-south-1')
-    .kv('MEMORY',     '7.8 GB / 8 GB')
-    .kv('UPTIME',     '14d 07h 33m')
-    .kv('BUILD',      'a3f9c12')
-    .kv('DEPLOYED',   '2026-04-14 · 09:41 UTC');
+    .kv('NODE_ENV', 'production')
+    .kv('REGION', 'ap-south-1')
+    .kv('MEMORY', '7.8 GB / 8 GB')
+    .kv('UPTIME', '14d 07h 33m')
+    .kv('BUILD', 'a3f9c12')
+    .kv('DEPLOYED', '2026-04-14 · 09:41 UTC');
   writeln();
 
   header('step sequences', 'numbered pipeline progress');
@@ -107,29 +107,23 @@ async function demoLogger() {
 
 async function demoSpinners() {
   sectionDivider('SPINNERS', GRADIENTS.fire);
-  header('27 animation types', 'every frame hand-crafted — including 7 cute pets');
+  header('25 animation types', 'every frame hand-crafted — including 11 action and multi-line pets');
 
   const types = [
-    { type: 'braille',  text: 'braille — classic dots',      color: 'chalk',    dur: 800  },
-    { type: 'dash',     text: 'dash — progress strip',        color: 'azure',    dur: 1000 },
-    { type: 'block',    text: 'block — solid fill',           color: 'signal',   dur: 900  },
-    { type: 'orbital',  text: 'orbital — quarter spin',       color: 'lavender', dur: 700  },
-    { type: 'pulse',    text: 'pulse — breath',               color: 'sage',     dur: 1100 },
-    { type: 'grid',     text: 'grid — dense braille',         color: 'amber',    dur: 800  },
-    { type: 'triangle', text: 'triangle — four corners',      color: 'signal',   dur: 700  },
-    { type: 'snake',    text: 'snake — rolling bits',         color: 'azure',    dur: 900  },
-    { type: 'signal',   text: 'signal — radar ping',          color: 'chalk',    dur: 1300 },
-    { type: 'morph',    text: 'morph — quadrant cycle',       color: 'lavender', dur: 800  },
-    { type: 'cross',    text: 'cross — crossing lines',       color: 'amber',    dur: 800  },
-    { type: 'clock',    text: 'clock — emoji dial',           color: 'sage',     dur: 800  },
-    { type: 'arc',      text: 'arc — half-circle sweep',      color: 'azure',    dur: 700  },
-    { type: 'line',     text: 'line — classic ASCII spin',    color: 'chalk',    dur: 700  },
-    { type: 'star',     text: 'star — radiant burst',         color: 'amber',    dur: 800  },
-    { type: 'wave',     text: 'wave — bar chart pulse',       color: 'lavender', dur: 900  },
-    { type: 'balloon',  text: 'balloon — expanding dot',      color: 'sage',     dur: 1200 },
-    { type: 'cyber',    text: 'cyber — bit crawl',            color: 'signal',   dur: 800  },
-    { type: 'flip',     text: 'flip — underscore ripple',     color: 'slate',    dur: 900  },
-    { type: 'meter',    text: 'meter — bouncing level',       color: 'azure',    dur: 900  },
+    { type: 'braille', text: 'braille — classic dots', color: 'chalk', dur: 800 },
+    { type: 'line', text: 'line — classic ASCII spin', color: 'chalk', dur: 700 },
+    { type: 'arc', text: 'arc — half-circle sweep', color: 'azure', dur: 700 },
+    { type: 'grid', text: 'grid — dense braille', color: 'amber', dur: 800 },
+    { type: 'wave', text: 'wave — bar chart pulse', color: 'lavender', dur: 900 },
+    { type: 'cyber', text: 'cyber — bit crawl', color: 'signal', dur: 800 },
+    { type: 'snake', text: 'snake — rolling bits', color: 'azure', dur: 900 },
+    { type: 'bounce', text: 'bounce — simple dot', color: 'chalk', dur: 800 },
+    { type: 'fade', text: 'fade — grayscale block', color: 'slate', dur: 900 },
+    { type: 'slash', text: 'slash — crossing bars', color: 'amber', dur: 800 },
+    { type: 'grow', text: 'grow — expanding block', color: 'signal', dur: 1000 },
+    { type: 'ripple', text: 'ripple — circular waves', color: 'azure', dur: 900 },
+    { type: 'runner', text: 'runner — pacman run', color: 'amber', dur: 1200 },
+    { type: 'heartbeat', text: 'heartbeat — pulsing love', color: 'signal', dur: 1000 },
   ];
 
   for (const s of types) {
@@ -145,20 +139,20 @@ async function demoSpinners() {
 // ─── Pet Spinners ─────────────────────────────────────────────────────────
 
 async function demoPetSpinners() {
-  header('pet spinners 🐾', 'premium kaomoji loaders — clean, expressive, pixel-perfect');
+  header('pet spinners 🐾', 'action kaomojis and multi-line ASCII art — animated loading fun');
 
   const pets = [
-    { type: 'catChase',    text: 'Prowling through modules…',       color: 'lavender', dur: 1800 },
-    { type: 'dogFetch',    text: 'Chasing down memory leaks…',      color: 'amber',    dur: 1800 },
-    { type: 'bunnyEat',    text: 'Fetching dependencies…',          color: 'sage',     dur: 1800 },
-    { type: 'fishSwim',    text: 'Streaming build artifacts…',      color: 'azure',    dur: 1800 },
-    { type: 'bearHoney',   text: 'Deploying to the cloud…',         color: 'amber',    dur: 1800 },
-    { type: 'caterpillar', text: 'Patiently building assets…',      color: 'sage',     dur: 1800 },
-    { type: 'catWalk',     text: 'Stretching the multi-line cat…',  color: 'lavender', dur: 2800 },
-    { type: 'dogWag',      text: 'Wagging the multi-line dog…',     color: 'amber',    dur: 2800 },
-    { type: 'bunnyHop',    text: 'Hopping the multi-line bunny…',   color: 'sage',     dur: 2800 },
-    { type: 'birdFlap',    text: 'Flapping the multi-line bird…',   color: 'chalk',    dur: 2800 },
-    { type: 'turtleCrawl', text: 'Crawling the multi-line turtle…', color: 'sage',     dur: 3500 },
+    { type: 'catChase', text: 'Prowling through modules…', color: 'lavender', dur: 1800 },
+    { type: 'dogFetch', text: 'Chasing down memory leaks…', color: 'amber', dur: 1800 },
+    { type: 'bunnyEat', text: 'Fetching dependencies…', color: 'sage', dur: 1800 },
+    { type: 'fishSwim', text: 'Streaming build artifacts…', color: 'azure', dur: 1800 },
+    { type: 'bearHoney', text: 'Deploying to the cloud…', color: 'amber', dur: 1800 },
+    { type: 'caterpillar', text: 'Patiently building assets…', color: 'sage', dur: 1800 },
+    { type: 'catWalk', text: 'Stretching the multi-line cat…', color: 'lavender', dur: 2400 },
+    { type: 'dogWag', text: 'Wagging the multi-line dog…', color: 'amber', dur: 2400 },
+    { type: 'bunnyHop', text: 'Hopping the multi-line bunny…', color: 'sage', dur: 2400 },
+    { type: 'birdFlap', text: 'Flapping the multi-line bird…', color: 'chalk', dur: 2400 },
+    { type: 'turtleCrawl', text: 'Crawling the multi-line turtle…', color: 'sage', dur: 3000 },
   ];
 
   for (const pet of pets) {
@@ -175,19 +169,19 @@ async function demoMultiSpinner() {
   header('multi-spinner', 'run concurrent tasks — each resolves independently');
 
   const multi = new MultiSpinner();
-  const i0 = multi.add({ type: 'braille', text: 'Compiling sources',     color: 'azure'    });
-  const i1 = multi.add({ type: 'wave',    text: 'Bundling assets',        color: 'lavender' });
-  const i2 = multi.add({ type: 'cyber',   text: 'Running tests',          color: 'chalk'    });
-  const i3 = multi.add({ type: 'meter',   text: 'Uploading to CDN',       color: 'sage'     });
-  const i4 = multi.add({ type: 'arc',     text: 'Notifying services',     color: 'amber'    });
+  const i0 = multi.add({ type: 'braille', text: 'Compiling sources', color: 'azure' });
+  const i1 = multi.add({ type: 'wave', text: 'Bundling assets', color: 'lavender' });
+  const i2 = multi.add({ type: 'cyber', text: 'Running tests', color: 'chalk' });
+  const i3 = multi.add({ type: 'runner', text: 'Uploading to CDN', color: 'sage' });
+  const i4 = multi.add({ type: 'arc', text: 'Notifying services', color: 'amber' });
   multi.start();
 
-  await sleep(fast ? 90  : slow ? 1100 : 360); multi.succeed(i0, 'Compiled — 0 errors');
-  await sleep(fast ? 70  : slow ? 650  : 260); multi.succeed(i1, 'Bundle: 48.2 KB gzip');
-  await sleep(fast ? 110 : slow ? 1000 : 340); multi.fail(i2,   '3 test failures');
-  await sleep(fast ? 70  : slow ? 550  : 240); multi.succeed(i3, 'CDN upload complete');
-  await sleep(fast ? 55  : slow ? 450  : 180); multi.warn(i4,   'Staging notified; prod skipped');
-  await sleep(fast ? 35  : slow ? 350  : 140);
+  await sleep(fast ? 90 : slow ? 1100 : 360); multi.succeed(i0, 'Compiled — 0 errors');
+  await sleep(fast ? 70 : slow ? 650 : 260); multi.succeed(i1, 'Bundle: 48.2 KB gzip');
+  await sleep(fast ? 110 : slow ? 1000 : 340); multi.fail(i2, '3 test failures');
+  await sleep(fast ? 70 : slow ? 550 : 240); multi.succeed(i3, 'CDN upload complete');
+  await sleep(fast ? 55 : slow ? 450 : 180); multi.warn(i4, 'Staging notified; prod skipped');
+  await sleep(fast ? 35 : slow ? 350 : 140);
   multi.stop();
   writeln();
 }
@@ -199,17 +193,19 @@ async function demoProgress() {
   header('6 bar styles', 'ETA + rate + live reflow on window resize');
 
   const styles = [
-    { style: 'block',     color: 'chalk',    label: 'block    ' },
-    { style: 'shaded',    color: 'azure',    label: 'shaded   ' },
-    { style: 'bracket',   color: 'lavender', label: 'bracket  ' },
-    { style: 'thin',      color: 'sage',     label: 'thin     ' },
-    { style: 'brutalist', color: 'signal',   label: 'brutalist' },
-    { style: 'dots',      color: 'amber',    label: 'dots     ' },
+    { style: 'block', color: 'chalk', label: 'block    ' },
+    { style: 'shaded', color: 'azure', label: 'shaded   ' },
+    { style: 'bracket', color: 'lavender', label: 'bracket  ' },
+    { style: 'thin', color: 'sage', label: 'thin     ' },
+    { style: 'brutalist', color: 'signal', label: 'brutalist' },
+    { style: 'dots', color: 'amber', label: 'dots     ' },
   ];
 
   for (const def of styles) {
-    const bar = new ProgressBar({ total: 50, style: def.style, color: def.color,
-                                  label: def.label, eta: true, rate: true });
+    const bar = new ProgressBar({
+      total: 50, style: def.style, color: def.color,
+      label: def.label, eta: true, rate: true
+    });
     bar.start();
     for (let i = 0; i <= 50; i++) { bar.update(i); await sleep(fast ? 2 : slow ? 20 : 5); }
     bar.complete();
@@ -222,10 +218,10 @@ async function demoMultiBar() {
   header('multi-bar', 'parallel downloads, builds, and more');
 
   const mb = new MultiBar();
-  const b0 = mb.add({ total: 100, style: 'block',  color: 'azure',    label: 'kernel.img   ', eta: true });
+  const b0 = mb.add({ total: 100, style: 'block', color: 'azure', label: 'kernel.img   ', eta: true });
   const b1 = mb.add({ total: 100, style: 'shaded', color: 'lavender', label: 'node_modules ', eta: true });
-  const b2 = mb.add({ total: 100, style: 'thin',   color: 'sage',     label: 'assets.tar.gz', eta: true });
-  const b3 = mb.add({ total: 100, style: 'dots',   color: 'amber',    label: 'cache.pack   ', eta: true });
+  const b2 = mb.add({ total: 100, style: 'thin', color: 'sage', label: 'assets.tar.gz', eta: true });
+  const b3 = mb.add({ total: 100, style: 'dots', color: 'amber', label: 'cache.pack   ', eta: true });
   mb.start();
 
   for (let t = 0; t <= 100; t++) {
@@ -261,8 +257,10 @@ async function demoBoxes() {
 
   box(
     `Service: api-gateway\nError:   ECONNREFUSED redis://10.0.1.15:6379\nRetry:   in 3000ms (attempt 2/5)`,
-    { border: 'double', color: 'signal', title: '⚠ ALERT', padding: 1, width: 58,
-      footer: '2026-04-14 · 09:41:22 UTC' }
+    {
+      border: 'double', color: 'signal', title: '⚠ ALERT', padding: 1, width: 58,
+      footer: '2026-04-14 · 09:41:22 UTC'
+    }
   );
   writeln();
 
@@ -278,9 +276,9 @@ async function demoColumns() {
 
   columns([
     { content: [`${c.lavender}${c.b}spinners${c.r}`, `${c.fog}20 types${c.r}`, `${c.fog}single + multi${c.r}`, `${c.fog}promise helper${c.r}`] },
-    { content: [`${c.azure}${c.b}progress${c.r}`,   `${c.fog}6 styles${c.r}`, `${c.fog}single + multi${c.r}`, `${c.fog}ETA + rate${c.r}`] },
-    { content: [`${c.sage}${c.b}layout${c.r}`,      `${c.fog}box, columns${c.r}`, `${c.fog}table, banner${c.r}`, `${c.fog}divider, badge${c.r}`] },
-    { content: [`${c.amber}${c.b}logger${c.r}`,     `${c.fog}6 log levels${c.r}`, `${c.fog}kv + step${c.r}`, `${c.fog}prefix + ts${c.r}`] },
+    { content: [`${c.azure}${c.b}progress${c.r}`, `${c.fog}6 styles${c.r}`, `${c.fog}single + multi${c.r}`, `${c.fog}ETA + rate${c.r}`] },
+    { content: [`${c.sage}${c.b}layout${c.r}`, `${c.fog}box, columns${c.r}`, `${c.fog}table, banner${c.r}`, `${c.fog}divider, badge${c.r}`] },
+    { content: [`${c.amber}${c.b}logger${c.r}`, `${c.fog}6 log levels${c.r}`, `${c.fog}kv + step${c.r}`, `${c.fog}prefix + ts${c.r}`] },
   ], { gap: 4 });
   writeln();
 }
@@ -292,12 +290,12 @@ async function demoTable() {
   header('table', '4 border styles · per-column align · cell truncation');
 
   table([
-    { package: 'lumi-cli',     version: '1.0.0',  size: '~30 KB',  deps: 0,  license: 'MIT' },
-    { package: 'chalk',        version: '5.3.0',  size: '8.2 KB',  deps: 0,  license: 'MIT' },
-    { package: 'ora',          version: '8.1.0',  size: '11 KB',   deps: 5,  license: 'MIT' },
-    { package: 'cli-progress', version: '3.12.0', size: '18 KB',   deps: 1,  license: 'MIT' },
-    { package: 'boxen',        version: '7.1.1',  size: '22 KB',   deps: 9,  license: 'MIT' },
-    { package: 'figlet',       version: '1.7.0',  size: '2.8 MB',  deps: 0,  license: 'MIT' },
+    { package: 'lumi-cli', version: '1.0.0', size: '~30 KB', deps: 0, license: 'MIT' },
+    { package: 'chalk', version: '5.3.0', size: '8.2 KB', deps: 0, license: 'MIT' },
+    { package: 'ora', version: '8.1.0', size: '11 KB', deps: 5, license: 'MIT' },
+    { package: 'cli-progress', version: '3.12.0', size: '18 KB', deps: 1, license: 'MIT' },
+    { package: 'boxen', version: '7.1.1', size: '22 KB', deps: 9, license: 'MIT' },
+    { package: 'figlet', version: '1.7.0', size: '2.8 MB', deps: 0, license: 'MIT' },
   ], { border: 'single', align: { deps: 'right', size: 'right' } });
   writeln();
 }
@@ -317,14 +315,14 @@ async function demoBadges() {
 
   header('gradient()', '8 presets · truecolor interpolation');
   const pairs = [
-    ['neon',   GRADIENTS.neon,   'Purple → Teal      '],
-    ['fire',   GRADIENTS.fire,   'Red → Amber        '],
-    ['ice',    GRADIENTS.ice,    'Blue → Sky         '],
+    ['neon', GRADIENTS.neon, 'Purple → Teal      '],
+    ['fire', GRADIENTS.fire, 'Red → Amber        '],
+    ['ice', GRADIENTS.ice, 'Blue → Sky         '],
     ['sunset', GRADIENTS.sunset, 'Red → Lavender     '],
     ['matrix', GRADIENTS.matrix, 'Bright → Deep Green'],
-    ['gold',   GRADIENTS.gold,   'Gold → Orange      '],
-    ['dawn',   GRADIENTS.dawn,   'Pink → Amber       '],
-    ['ocean',  GRADIENTS.ocean,  'Sky → Deep Blue    '],
+    ['gold', GRADIENTS.gold, 'Gold → Orange      '],
+    ['dawn', GRADIENTS.dawn, 'Pink → Amber       '],
+    ['ocean', GRADIENTS.ocean, 'Sky → Deep Blue    '],
   ];
   for (const [name, g, label] of pairs) {
     writeln(`  ${gradient('█'.repeat(32), ...g)}  ${c.slate}${name.padEnd(8)} ${label}${c.r}`);
@@ -339,16 +337,16 @@ async function demoSparklines() {
   sectionDivider('SPARKLINES', GRADIENTS.matrix);
   header('sparkline()', 'inline block-character mini-charts for log lines and dashboards');
 
-  const cpu  = Array.from({ length: 24 }, () => Math.round(Math.random() * 80 + 5));
-  const mem  = Array.from({ length: 24 }, (_, i) => 60 + Math.round(Math.sin(i / 4) * 20));
-  const rps  = Array.from({ length: 24 }, () => Math.round(Math.random() * 400 + 100));
-  const errs = [0,0,0,1,0,0,2,0,0,0,5,8,3,1,0,0,0,0,1,0,0,0,0,0];
+  const cpu = Array.from({ length: 24 }, () => Math.round(Math.random() * 80 + 5));
+  const mem = Array.from({ length: 24 }, (_, i) => 60 + Math.round(Math.sin(i / 4) * 20));
+  const rps = Array.from({ length: 24 }, () => Math.round(Math.random() * 400 + 100));
+  const errs = [0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 5, 8, 3, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0];
 
   log
-    .kv('CPU   (24h)', sparkline(cpu,  { color: 'azure'  }) + `  ${c.slate}peak: ${Math.max(...cpu)}%${c.r}`)
-    .kv('Memory (24h)', sparkline(mem,  { color: 'sage'   }) + `  ${c.slate}avg: ${Math.round(mem.reduce((a,b)=>a+b)/mem.length)}%${c.r}`)
-    .kv('RPS    (24h)', sparkline(rps,  { color: 'amber'  }) + `  ${c.slate}max: ${Math.max(...rps)}/s${c.r}`)
-    .kv('Errors (24h)', sparkline(errs, { color: 'signal' }) + `  ${c.slate}total: ${errs.reduce((a,b)=>a+b)}${c.r}`);
+    .kv('CPU   (24h)', sparkline(cpu, { color: 'azure' }) + `  ${c.slate}peak: ${Math.max(...cpu)}%${c.r}`)
+    .kv('Memory (24h)', sparkline(mem, { color: 'sage' }) + `  ${c.slate}avg: ${Math.round(mem.reduce((a, b) => a + b) / mem.length)}%${c.r}`)
+    .kv('RPS    (24h)', sparkline(rps, { color: 'amber' }) + `  ${c.slate}max: ${Math.max(...rps)}/s${c.r}`)
+    .kv('Errors (24h)', sparkline(errs, { color: 'signal' }) + `  ${c.slate}total: ${errs.reduce((a, b) => a + b)}${c.r}`);
   writeln();
 }
 
@@ -364,15 +362,15 @@ async function demoTree() {
       'ansi.js': null,
       'spinners/': { 'index.js': null },
       'progress/': { 'index.js': null },
-      'banner/':   { 'index.js': null },
-      'box/':      { 'index.js': null },
-      'table/':    { 'index.js': null },
-      'logger/':   { 'index.js': null },
-      'sparkline/':{ 'index.js': null },
-      'tree/':     { 'index.js': null },
-      'diff/':     { 'index.js': null },
-      'statusbar/':{ 'index.js': null },
-      'prompt/':   { 'index.js': null },
+      'banner/': { 'index.js': null },
+      'box/': { 'index.js': null },
+      'table/': { 'index.js': null },
+      'logger/': { 'index.js': null },
+      'sparkline/': { 'index.js': null },
+      'tree/': { 'index.js': null },
+      'diff/': { 'index.js': null },
+      'statusbar/': { 'index.js': null },
+      'prompt/': { 'index.js': null },
       'types.d.ts': null,
     },
     'demo.js': null,
@@ -440,7 +438,7 @@ async function demoStatusBar() {
   for (let i = 0; i < steps.length; i++) {
     const pct = Math.round(((i + 1) / steps.length) * 100);
     bar.update({
-      left:  `  ${c.lavender}⣿${c.r} ${c.chalk}${steps[i]}${c.r}`,
+      left: `  ${c.lavender}⣿${c.r} ${c.chalk}${steps[i]}${c.r}`,
       right: `${c.slate}${pct}% · ${i + 1}/${steps.length}${c.r}  `,
     });
     log.step(i + 1, steps.length, steps[i]);
@@ -462,15 +460,15 @@ async function demoPrompts() {
   writeln(`${c.slate}  Running live prompts — press keys to interact.${c.r}`);
   writeln();
 
-  const ok  = await confirm('Ship this release to production?');
+  const ok = await confirm('Ship this release to production?');
   const env = await select('Target environment:', ['dev', 'staging', 'production'], { default: 'staging' });
   const tag = await input('Release tag:', { default: 'v1.0.0', placeholder: 'e.g. v2.0.0' });
 
   writeln();
   log
-    .kv('confirmed', ok  ? 'yes' : 'no')
-    .kv('env',       env)
-    .kv('tag',       tag);
+    .kv('confirmed', ok ? 'yes' : 'no')
+    .kv('env', env)
+    .kv('tag', tag);
   writeln();
 }
 
@@ -512,31 +510,31 @@ async function closer() {
 // ─── Section registry ─────────────────────────────────────────────────────
 
 const SECTIONS = {
-  banner:    splash,
-  logger:    demoLogger,
-  spinners:  demoSpinners,
-  pets:      demoPetSpinners,
-  multi:     demoMultiSpinner,
-  progress:  demoProgress,
-  multibar:  demoMultiBar,
-  boxes:     demoBoxes,
-  columns:   demoColumns,
-  table:     demoTable,
-  badges:    demoBadges,
-  sparklines:demoSparklines,
-  tree:      demoTree,
-  diff:      demoDiff,
+  banner: splash,
+  logger: demoLogger,
+  spinners: demoSpinners,
+  pets: demoPetSpinners,
+  multi: demoMultiSpinner,
+  progress: demoProgress,
+  multibar: demoMultiBar,
+  boxes: demoBoxes,
+  columns: demoColumns,
+  table: demoTable,
+  badges: demoBadges,
+  sparklines: demoSparklines,
+  tree: demoTree,
+  diff: demoDiff,
   statusbar: demoStatusBar,
-  links:     demoLinks,
-  prompts:   demoPrompts,   // interactive — run with: node demo.js prompts
-  closer:    closer,
+  links: demoLinks,
+  prompts: demoPrompts,   // interactive — run with: node demo.js prompts
+  closer: closer,
 };
 
 // ─── Main ─────────────────────────────────────────────────────────────────
 
 async function demo() {
-  const flags     = ['--slow', '--fast'];
-  const args      = process.argv.slice(2).filter(a => !flags.includes(a));
+  const flags = ['--slow', '--fast'];
+  const args = process.argv.slice(2).filter(a => !flags.includes(a));
   const requested = args.filter(a => SECTIONS[a]);
 
   process.stdout.write('\x1bc');
