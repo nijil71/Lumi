@@ -1,6 +1,6 @@
 // ─── lumi-cli / tree ──────────────────────────────────────────────────────
 
-import { writeln, c as colors } from '../ansi.js';
+import { writeln, c as colors, getColorTheme } from '../ansi.js';
 
 // Box-drawing connector chars
 const PIPE  = '│   ';
@@ -15,9 +15,9 @@ const BLANK = '    ';
  *   - Object: keys are node labels, values are children (object/array) or null (leaf)
  *   - Array:  items are leaf node labels
  * @param {object}  options
- * @param {string}  [options.color='chalk']     - Label color for leaf nodes
- * @param {string}  [options.dirColor='azure']  - Color for branch (non-leaf) nodes
- * @param {string}  [options.lineColor='dim']   - Color for connector lines
+ * @param {string}  [options.color='chalk']     - Theme name for leaf nodes
+ * @param {string}  [options.dirColor='azure']  - Theme name for branch (non-leaf) nodes
+ * @param {string}  [options.lineColor='dim']   - Theme name for connector lines
  *
  * @example
  * tree({
@@ -29,20 +29,22 @@ const BLANK = '    ';
  * });
  */
 export function tree(data, options = {}) {
-  const leafColor = colors[options.color]     ?? colors.chalk;
-  const dirColor  = colors[options.dirColor]  ?? colors.azure;
-  const lineColor = colors[options.lineColor] ?? colors.graphite;
+  // Resolve via getColorTheme so theme names (like 'dim') work consistently
+  // with the rest of the library. Previously this used `colors[name]` which
+  // silently fell back to chalk for any theme whose name didn't match a
+  // palette key (e.g. 'dim' → `colors.d`, mismatch → chalk).
+  const leafTheme = getColorTheme(options.color     || 'chalk');
+  const dirTheme  = getColorTheme(options.dirColor  || 'azure');
+  const lineTheme = getColorTheme(options.lineColor || 'dim');
 
   function renderNode(key, value, prefix, isLast) {
     const connector  = isLast ? ELBOW : TEE;
     const childPfx   = prefix + (isLast ? BLANK : PIPE);
     const isDir      = value !== null && value !== undefined &&
                        (typeof value === 'object');
-    const labelColor = isDir ? dirColor : leafColor;
+    const labelTheme = isDir ? dirTheme : leafTheme;
 
-    writeln(
-      `${lineColor}${prefix}${connector}${colors.r}${labelColor}${key}${colors.r}`
-    );
+    writeln(lineTheme(prefix + connector) + labelTheme(String(key)));
 
     if (Array.isArray(value)) {
       for (let i = 0; i < value.length; i++) {

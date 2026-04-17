@@ -1,6 +1,6 @@
 // ─── lumi-cli / spinners ────────────────────────────────────────────────
 
-import { write, writeln, ansi, c as colors, isTTY, getColorTheme } from '../ansi.js';
+import { write, writeln, ansi, c as colors, isTTY, getColorTheme, registerCleanup } from '../ansi.js';
 
 export const SPINNERS = {
   // ── core classics (earn their place) ──────────────────────────────────
@@ -17,15 +17,17 @@ export const SPINNERS = {
   slash:    { interval: 80,  frames: ['╱','╲','╱','╲'] },
   grow:     { interval: 90,  frames: ['▏','▍','▋','█','▋','▍'] },
   ripple:   { interval: 100, frames: ['·','∘','○','◯','○','∘'] },
-  runner:   { interval: 120, frames: ['ᗧ···','·ᗧ··','··ᗧ·','···ᗧ','···ᗧ','··ᗧ·','·ᗧ··','ᗧ···'] },
-  heartbeat:{ interval: 100, frames: ['♡','♥','♡','♡','♡'] },
+  // Runner with a breath pause at each end, not a duplicated frame
+  runner:   { interval: 120, frames: ['ᗧ···','·ᗧ··','··ᗧ·','···ᗧ','··ᗧ·','·ᗧ··'] },
+  // Heartbeat: lub-dub rhythm (quick double beat then rest)
+  heartbeat:{ interval: 120, frames: ['♡','♥','♡','♥','♡',' ',' '] },
 
 
   // ── action pets (single line, highly dynamic) ─────────────────────────
 
   catChase:    { interval: 100, frames: ['(=^･ω･^=)       🐁',' (=^･ω･^=)      🐁','  (=^･ω･^=)     🐁','   (=^･ω･^=)    🐁','    (=^･ω･^=)   🐁','     (=^･ω･^=)  🐁','      (=^･ω･^=) 🐁','       (=^>ω<^=)🐁','       (=^>ω<^=)','      (=^-ω-^=) ','    (=^-ω-^=)   ','  (=^-ω-^=)     '] },
   dogFetch:    { interval: 150, frames: ['( ᐡ • ﻌ • ᐡ )   🎾','( ᐡ > ﻌ < ᐡ )  🎾 ','( ᐡ • ﻌ • ᐡ ) 🎾  ','( ᐡ > ﻌ < ᐡ )🎾   ','( ᐡ ^ ﻌ ^ ᐡ )     ','( ᐡ > ﻌ < ᐡ )🎾   ','( ᐡ • ﻌ • ᐡ ) 🎾  ','( ᐡ > ﻌ < ᐡ )  🎾 '] },
-  bunnyEat:    { interval: 180, frames: ['₍ᐢ•ﻌ•ᐢ₎ 🥕','₍ᐢ>ﻌ<ᐢ₎ 🥕','₍ᐢ•ﻌ•ᐢ₎ 🥕','₍ᐢ-ﻌ-ᐢ₎ 🥕','₍ᐢ^ﻌ^ᐢ₎ 🥕','₍ᐢ>ﻌ<ᐢ₎   '] },
+  bunnyEat:    { interval: 180, frames: ['₍ᐢ•ﻌ•ᐢ₎ 🥕','₍ᐢ>ﻌ<ᐢ₎ 🥕','₍ᐢ-ﻌ-ᐢ₎ 🥕','₍ᐢ^ﻌ^ᐢ₎ 🥕','₍ᐢ>ﻌ<ᐢ₎   '] },
   fishSwim:    { interval: 150, frames: ['     ϵ( \'Θ\' )϶  ','   °  ϵ( °Θ° )϶ ',' ∘  ° ϵ( \'Θ\' )϶ ','   ∘  ϵ( °Θ° )϶ ','     ϵ( >Θ< )϶  ','     ϵ( \'Θ\' )϶  '] },
   bearHoney:   { interval: 200, frames: ['ʕ •ᴥ• ʔ  🍯','ʕ >ᴥ< ʔ  🍯','ʕ ^ᴥ^ ʔ 🍯 ','ʕ -ᴥ- ʔ🍯  ','ʕ >ᴥ< ʔ    '] },
   caterpillar: { interval: 80,  frames: ['🐛        ',' 🐛       ','  🐛      ','   🐛     ','    🐛    ','     🐛   ','      🐛  ','       🐛 ','        🐛'] },
@@ -66,24 +68,6 @@ export const SPINNERS = {
 };
 
 
-// ─── SIGINT cleanup registry ──────────────────────────────────────────────
-// All active spinners register here so Ctrl+C restores the cursor.
-
-const activeInstances = new Set();
-let sigintBound = false;
-
-function ensureSigintHandler() {
-  if (sigintBound) return;
-  sigintBound = true;
-  process.on('SIGINT', () => {
-    for (const instance of activeInstances) {
-      instance.stop();
-    }
-    write(ansi.show());
-    process.exit(130);
-  });
-}
-
 function formatElapsed(ms) {
   if (ms < 1000) return `${ms}ms`;
   const s = (ms / 1000).toFixed(1);
@@ -104,6 +88,7 @@ export class Spinner {
     this._startMs = null;
     this._multiLine = this._def.frames.some(f => f.includes('\n'));
     this._renderedLines = 0;
+    this._unregister = null;
   }
 
   _render() {
@@ -122,13 +107,13 @@ export class Spinner {
       }
       const lines = frame.split('\n');
       for (let i = 0; i < lines.length; i++) {
-        write(ansi.col(1) + ansi.clearLine() + `  ${this._colorFn(lines[i])}` + '\n');
+        write(ansi.clearLine() + `  ${this._colorFn(lines[i])}` + '\n');
       }
-      write(ansi.col(1) + ansi.clearLine() + `${prefix}${colors.fog}⠿${colors.r}${text}`);
+      write(ansi.clearLine() + `${prefix}${colors.fog}⠿${colors.r}${text}`);
       this._renderedLines = lines.length;
     } else {
       const spinner = this._colorFn(frame);
-      write(ansi.col(1) + ansi.clearLine() + `${prefix}${spinner}${text}`);
+      write(ansi.clearLine() + `${prefix}${spinner}${text}`);
     }
     this._frame++;
   }
@@ -141,8 +126,7 @@ export class Spinner {
       return this;
     }
 
-    ensureSigintHandler();
-    activeInstances.add(this);
+    this._unregister = registerCleanup(() => this._cleanup());
     write(ansi.hide());
 
     if (this._multiLine) {
@@ -152,6 +136,8 @@ export class Spinner {
     }
 
     this._timer = setInterval(() => this._render(), this._def.interval);
+    // keep node from holding the event loop open just for a spinner
+    if (this._timer.unref) this._timer.unref();
     this._render();
     return this;
   }
@@ -165,8 +151,8 @@ export class Spinner {
   info(text)    { this._stop(`${colors.azure}ℹ${colors.r}`,  text || this._text); }
 
   _stop(symbol, text) {
-    clearInterval(this._timer);
-    activeInstances.delete(this);
+    if (this._timer) { clearInterval(this._timer); this._timer = null; }
+    if (this._unregister) { this._unregister(); this._unregister = null; }
 
     let elapsed = '';
     if (this._elapsed && this._startMs) {
@@ -178,23 +164,40 @@ export class Spinner {
         write(ansi.up(this._renderedLines));
         write(ansi.clearDown());
       }
-      write(ansi.col(1) + ansi.clearLine());
+      write(ansi.clearLine());
+      write(`${symbol} ${colors.chalk}${text}${colors.r}${elapsed}\n`);
+      write(ansi.show());
+    } else {
+      // Non-TTY: write a plain settled line so piped logs capture the outcome.
+      // Strip ANSI from symbol to keep log files clean.
+      const plainSymbol = symbol.replace(/\x1b\[[0-9;]*m/g, '');
+      writeln(`${plainSymbol} ${text}${elapsed ? ` ${elapsed.replace(/\x1b\[[0-9;]*m/g, '')}` : ''}`);
     }
-    write(`${symbol} ${colors.chalk}${text}${colors.r}${elapsed}\n`);
-    write(ansi.show());
   }
 
   stop() {
-    clearInterval(this._timer);
-    activeInstances.delete(this);
+    if (this._timer) { clearInterval(this._timer); this._timer = null; }
+    if (this._unregister) { this._unregister(); this._unregister = null; }
     if (isTTY()) {
       if (this._multiLine && this._renderedLines > 0) {
         write(ansi.up(this._renderedLines));
         write(ansi.clearDown());
       }
-      write(ansi.col(1) + ansi.clearLine());
+      write(ansi.clearLine());
+      write(ansi.show());
     }
-    write(ansi.show());
+  }
+
+  /** Internal cleanup invoked on SIGINT / exit — just silences output. */
+  _cleanup() {
+    if (this._timer) { clearInterval(this._timer); this._timer = null; }
+    if (isTTY()) {
+      if (this._multiLine && this._renderedLines > 0) {
+        write(ansi.up(this._renderedLines));
+        write(ansi.clearDown());
+      }
+      write(ansi.clearLine());
+    }
   }
 
   static async promise(promise, options = {}) {
@@ -223,6 +226,7 @@ export class MultiSpinner {
     this._spinners = [];
     this._timer    = null;
     this._lines    = 0;
+    this._unregister = null;
   }
 
   add(textOrOptions) {
@@ -254,7 +258,7 @@ export class MultiSpinner {
   _renderAll() {
     if (this._lines > 0) write(ansi.up(this._lines));
     for (const s of this._spinners) {
-      write(ansi.col(1) + ansi.clearLine());
+      write(ansi.clearLine());
       if (s.status === 'spinning') {
         const frame = s.def.frames[s.frame % s.def.frames.length];
         write(`  ${s.colorFn(frame)} ${colors.fog}${s.text}${colors.r}\n`);
@@ -271,28 +275,37 @@ export class MultiSpinner {
       return this;
     }
 
-    ensureSigintHandler();
-    activeInstances.add(this);
+    this._unregister = registerCleanup(() => this._cleanup());
     write(ansi.hide());
     for (let i = 0; i < this._spinners.length; i++) write('\n');
     this._lines = this._spinners.length;
     this._timer = setInterval(() => this._renderAll(), 80);
+    if (this._timer.unref) this._timer.unref();
     this._renderAll();
     return this;
   }
 
   stop() {
-    clearInterval(this._timer);
-    activeInstances.delete(this);
+    if (this._timer) { clearInterval(this._timer); this._timer = null; }
+    if (this._unregister) { this._unregister(); this._unregister = null; }
 
     if (isTTY()) {
       this._renderAll();
+      write(ansi.show());
     } else {
       for (const s of this._spinners) {
-        const sym = s.symbol || (s.status === 'spinning' ? '·' : '✔');
+        const sym = s.symbol ? s.symbol.replace(/\x1b\[[0-9;]*m/g, '') : (s.status === 'spinning' ? '·' : '✔');
         writeln(`  ${sym} ${s.text}`);
       }
     }
-    write(ansi.show());
+  }
+
+  _cleanup() {
+    if (this._timer) { clearInterval(this._timer); this._timer = null; }
+    if (isTTY() && this._lines > 0) {
+      // clear lines by rendering them empty
+      write(ansi.up(this._lines));
+      for (let i = 0; i < this._lines; i++) write(ansi.clearLine() + '\n');
+    }
   }
 }

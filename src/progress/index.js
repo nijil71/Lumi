@@ -1,6 +1,6 @@
 // ─── lumi-cli / progress ─────────────────────────────────────────────────
 
-import { write, writeln, ansi, c as colors, cols, stripAnsi, isTTY, getColorTheme } from '../ansi.js';
+import { write, writeln, ansi, c as colors, cols, visibleLen, isTTY, getColorTheme, registerCleanup } from '../ansi.js';
 
 // ─── Progress bar styles ──────────────────────────────────────────────────
 
@@ -25,28 +25,13 @@ const STYLES = {
   },
 };
 
-// ─── SIGINT cleanup registry ──────────────────────────────────────────────
-
-const activeInstances = new Set();
-let sigintBound = false;
-
-function ensureSigintHandler() {
-  if (sigintBound) return;
-  sigintBound = true;
-  process.on('SIGINT', () => {
-    for (const instance of activeInstances) {
-      if (typeof instance.stop === 'function') instance.stop();
-    }
-    write(ansi.show());
-    process.exit(130);
-  });
-}
-
 // ─── ProgressBar class ────────────────────────────────────────────────────
 
 export class ProgressBar {
   constructor(options = {}) {
-    this._total   = Math.max(1, options.total ?? 100);
+    // total=0 means indeterminate; keep the user value so we can distinguish.
+    this._indeterminate = options.total === 0;
+    this._total   = this._indeterminate ? 1 : Math.max(1, options.total ?? 100);
     this._current = Math.max(0, options.current ?? 0);
     this._style   = STYLES[options.style || 'block'];
     this._width   = options.width   || null;
@@ -58,6 +43,8 @@ export class ProgressBar {
     this._started = false;
     this._startMs = null;
     this._colorFn = getColorTheme(this._color);
+    this._unregister = null;
+    this._indetFrame = 0;
 
     // Non-TTY: track which percentage milestones we've printed
     this._printedMilestones = new Set();
@@ -65,10 +52,10 @@ export class ProgressBar {
 
   _barWidth() {
     const terminal = this._width || cols();
-    const labelLen = this._label ? stripAnsi(this._label).length + 1 : 0;
+    const labelLen = this._label ? visibleLen(this._label) + 1 : 0;
     const pctLen   = 7;
     const numLen   = String(this._total).length * 2 + 3;
-    const caps     = this._style.caps[0].length + this._style.caps[1].length;
+    const caps     = visibleLen(this._style.caps[0]) + visibleLen(this._style.caps[1]);
     const etaLen   = this._showEta ? 10 : 0;
     const rateLen  = this._showRate ? 12 : 0;
     return Math.max(1, terminal - labelLen - pctLen - numLen - caps - etaLen - rateLen - 2);
@@ -95,26 +82,40 @@ export class ProgressBar {
   }
 
   _render() {
-    const pct    = Math.min(1, Math.max(0, this._current / this._total));
     const width  = this._barWidth();
-    const filled = Math.round(pct * width);
-    const empty  = width - filled;
     const s      = this._style;
 
-    let bar = '';
-    if (filled > 0) {
-      bar += s.filled.repeat(Math.max(0, filled - 1));
-      bar += filled > 0 ? s.head : '';
+    let bar;
+    if (this._indeterminate) {
+      // Sliding 20%-wide window that bounces across the track
+      const chunk = Math.max(3, Math.floor(width * 0.2));
+      const span = Math.max(1, width - chunk);
+      const pos = Math.abs(((this._indetFrame++) % (span * 2)) - span);
+      bar = s.empty.repeat(pos) + s.filled.repeat(chunk) + s.empty.repeat(Math.max(0, width - pos - chunk));
+    } else {
+      const pct    = Math.min(1, Math.max(0, this._current / this._total));
+      const filled = Math.round(pct * width);
+      const empty  = width - filled;
+      bar = '';
+      if (filled > 0) {
+        bar += s.filled.repeat(Math.max(0, filled - 1));
+        bar += s.head;
+      }
+      bar += s.empty.repeat(Math.max(0, empty));
     }
-    bar += s.empty.repeat(Math.max(0, empty));
 
+    const pct = this._indeterminate ? 0 : Math.min(1, Math.max(0, this._current / this._total));
     const coloredBar = this._colorFn(s.caps[0] + bar + s.caps[1]);
-    const pctStr     = `${colors.fog}${String(Math.round(pct * 100)).padStart(3)}%${colors.r}`;
-    const numStr     = `${colors.slate}${String(this._current).padStart(String(this._total).length)}/${this._total}${colors.r}`;
+    const pctStr     = this._indeterminate
+      ? `${colors.fog}  · %${colors.r}`
+      : `${colors.fog}${String(Math.round(pct * 100)).padStart(3)}%${colors.r}`;
+    const numStr     = this._indeterminate
+      ? `${colors.slate}${this._current}${colors.r}`
+      : `${colors.slate}${String(this._current).padStart(String(this._total).length)}/${this._total}${colors.r}`;
     const label      = this._label ? `${colors.mist}${this._label}${colors.r} ` : '';
 
     let suffix = '';
-    if (this._showEta && pct < 1) {
+    if (this._showEta && !this._indeterminate && pct < 1) {
       const eta = this._calcEta();
       if (eta) suffix += ` ${colors.slate}ETA ${eta}${colors.r}`;
     }
@@ -123,11 +124,12 @@ export class ProgressBar {
       if (rate) suffix += ` ${colors.slate}${rate}${colors.r}`;
     }
 
-    write(ansi.col(1) + ansi.clearLine());
+    write(ansi.clearLine());
     write(`${label}${coloredBar} ${pctStr} ${numStr}${suffix}`);
   }
 
   _renderNonTTY() {
+    if (this._indeterminate) return;
     const pct = Math.round((this._current / this._total) * 100);
     const milestones = [0, 25, 50, 75, 100];
     for (const m of milestones) {
@@ -148,8 +150,7 @@ export class ProgressBar {
       return this;
     }
 
-    ensureSigintHandler();
-    activeInstances.add(this);
+    this._unregister = registerCleanup(() => this._cleanup());
     write(ansi.hide());
     write('\n');
     this._render();
@@ -158,7 +159,11 @@ export class ProgressBar {
 
   update(current, label) {
     if (label !== undefined) this._label = label;
-    this._current = Math.min(Math.max(0, current), this._total);
+    if (this._indeterminate) {
+      this._current = current ?? this._current;
+    } else {
+      this._current = Math.min(Math.max(0, current), this._total);
+    }
 
     if (!isTTY()) {
       this._renderNonTTY();
@@ -173,6 +178,7 @@ export class ProgressBar {
   }
 
   complete(text) {
+    this._indeterminate = false;
     this._current = this._total;
 
     if (!isTTY()) {
@@ -181,6 +187,7 @@ export class ProgressBar {
         writeln(`${label}100% (${this._total}/${this._total})`);
       }
       if (text) writeln(`✔ ${text}`);
+      if (this._unregister) { this._unregister(); this._unregister = null; }
       return;
     }
 
@@ -189,23 +196,29 @@ export class ProgressBar {
     if (text) {
       write(`${colors.sage}✔${colors.r} ${colors.chalk}${text}${colors.r}\n`);
     }
-    activeInstances.delete(this);
+    if (this._unregister) { this._unregister(); this._unregister = null; }
     write(ansi.show());
   }
 
   /** Remove the progress bar line from the terminal */
   clear() {
     if (isTTY()) {
-      write(ansi.col(1) + ansi.clearLine());
+      write(ansi.clearLine());
+      write(ansi.show());
     }
-    activeInstances.delete(this);
-    write(ansi.show());
+    if (this._unregister) { this._unregister(); this._unregister = null; }
   }
 
   stop() {
-    write('\n');
-    activeInstances.delete(this);
-    write(ansi.show());
+    if (isTTY()) {
+      write('\n');
+      write(ansi.show());
+    }
+    if (this._unregister) { this._unregister(); this._unregister = null; }
+  }
+
+  _cleanup() {
+    if (isTTY()) write(ansi.clearLine());
   }
 }
 
@@ -215,10 +228,15 @@ export class MultiBar {
   constructor() {
     this._bars  = [];
     this._lines = 0;
+    this._unregister = null;
+    this._autoTimer = null;
   }
 
   add(options) {
     const bar = new ProgressBar(options);
+    // Start the timer so ETA/rate work for child bars even though we never
+    // call bar.start() directly.
+    bar._startMs = Date.now();
     this._bars.push(bar);
     return this._bars.length - 1;
   }
@@ -226,8 +244,20 @@ export class MultiBar {
   update(idx, current, label) {
     const bar = this._bars[idx];
     if (!bar) return;
-    bar._current = Math.min(current, bar._total);
+    if (bar._indeterminate) {
+      bar._current = current ?? bar._current;
+    } else {
+      bar._current = Math.min(Math.max(0, current), bar._total);
+    }
     if (label !== undefined) bar._label = label;
+    // Re-render immediately so callers don't have to remember tick().
+    if (isTTY() && this._lines > 0) this._renderAll();
+  }
+
+  increment(idx, by = 1, label) {
+    const bar = this._bars[idx];
+    if (!bar) return;
+    return this.update(idx, bar._current + by, label);
   }
 
   _renderAll() {
@@ -242,11 +272,15 @@ export class MultiBar {
   start() {
     if (!isTTY()) return this;
 
-    ensureSigintHandler();
-    activeInstances.add(this);
+    this._unregister = registerCleanup(() => this._cleanup());
     write(ansi.hide());
     for (let i = 0; i < this._bars.length; i++) write('\n');
     this._lines = this._bars.length;
+    // Drive indeterminate bars on a timer so they animate without update() calls
+    this._autoTimer = setInterval(() => {
+      if (this._bars.some(b => b._indeterminate)) this._renderAll();
+    }, 100);
+    if (this._autoTimer.unref) this._autoTimer.unref();
     this._renderAll();
     return this;
   }
@@ -258,11 +292,16 @@ export class MultiBar {
   }
 
   stop() {
+    if (this._autoTimer) { clearInterval(this._autoTimer); this._autoTimer = null; }
     if (isTTY()) {
       this._renderAll();
+      write(ansi.show());
     }
-    activeInstances.delete(this);
-    write(ansi.show());
+    if (this._unregister) { this._unregister(); this._unregister = null; }
+  }
+
+  _cleanup() {
+    if (this._autoTimer) { clearInterval(this._autoTimer); this._autoTimer = null; }
   }
 }
 

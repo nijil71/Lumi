@@ -1,6 +1,6 @@
 // ─── lumi-cli / box ─────────────────────────────────────────────────────
 
-import { writeln, c as colors, cols, padEnd, visibleLen, stripAnsi, getColorTheme } from '../ansi.js';
+import { writeln, c as colors, cols, padEnd, visibleLen, stripAnsi, truncate, getColorTheme } from '../ansi.js';
 
 // ─── Border styles ────────────────────────────────────────────────────────
 
@@ -37,6 +37,100 @@ const BORDERS = {
   },
 };
 
+// ─── ANSI-aware word wrap ─────────────────────────────────────────────────
+//
+// Splits `line` into pieces each having visible width ≤ innerWidth, while
+// preserving ANSI SGR codes across wrap boundaries. If a code opens on one
+// wrapped segment, we close it (reset) at end-of-segment and re-open at
+// start of next segment. This keeps color/bold/etc. from bleeding past the
+// right border and from getting lost on the continuation line.
+
+function wrapLine(line, innerWidth) {
+  if (visibleLen(line) <= innerWidth) return [line];
+
+  // Tokenize into {type:'ansi'|'text', value} chunks.
+  const tokens = [];
+  const re = /\x1b\[[\?!]?[0-9;]*[a-zA-Z~]|\x1b\][^\x07]*\x07|\x1b[78]/g;
+  let last = 0, m;
+  while ((m = re.exec(line)) !== null) {
+    if (m.index > last) tokens.push({ type: 'text', value: line.slice(last, m.index) });
+    tokens.push({ type: 'ansi', value: m[0] });
+    last = re.lastIndex;
+  }
+  if (last < line.length) tokens.push({ type: 'text', value: line.slice(last) });
+
+  // Walk tokens, wrapping on spaces where possible. Track active SGR codes
+  // so we can re-emit them on the next line.
+  const out = [];
+  let current = '';
+  let currentVis = 0;
+  let active = [];   // stack of currently-open SGR strings
+
+  const pushLine = () => {
+    // Close with reset so the right border isn't painted by our color.
+    out.push(current + (active.length ? colors.r : ''));
+    current = active.join('');
+    currentVis = 0;
+  };
+
+  for (const tok of tokens) {
+    if (tok.type === 'ansi') {
+      current += tok.value;
+      if (tok.value === colors.r || tok.value === '\x1b[0m') {
+        active = [];
+      } else {
+        active.push(tok.value);
+      }
+      continue;
+    }
+
+    // Split text into words preserving spaces as separators
+    const parts = tok.value.split(/(\s+)/);
+    for (const part of parts) {
+      if (part === '') continue;
+      const partVis = visibleLen(part);
+
+      if (currentVis + partVis <= innerWidth) {
+        current += part;
+        currentVis += partVis;
+        continue;
+      }
+
+      // part doesn't fit on the current line
+      if (/^\s+$/.test(part)) {
+        // trailing space at wrap boundary — drop and wrap
+        pushLine();
+        continue;
+      }
+
+      // if current line has content, wrap it
+      if (currentVis > 0) pushLine();
+
+      // part alone is longer than innerWidth — hard-break by character
+      if (partVis > innerWidth) {
+        let remaining = part;
+        while (visibleLen(remaining) > innerWidth) {
+          const chunk = [...remaining].slice(0, innerWidth).join('');
+          current += chunk;
+          currentVis += visibleLen(chunk);
+          pushLine();
+          remaining = [...remaining].slice(innerWidth).join('');
+        }
+        current += remaining;
+        currentVis += visibleLen(remaining);
+      } else {
+        current += part;
+        currentVis += partVis;
+      }
+    }
+  }
+
+  if (currentVis > 0 || current.length > 0) {
+    out.push(current + (active.length ? colors.r : ''));
+  }
+  return out;
+}
+
 // ─── Box ──────────────────────────────────────────────────────────────────
 
 export function box(content, options = {}) {
@@ -47,35 +141,17 @@ export function box(content, options = {}) {
   const padding    = options.padding !== undefined ? options.padding : 1;
   const maxWidth   = options.width  || Math.min(cols(), 80);
   const align      = options.align  || 'left';
-  const innerWidth = maxWidth - 2 - padding * 2;
+  const indentStr  = options.indent || '';
+  const innerWidth = Math.max(1, maxWidth - 2 - padding * 2);
 
   const lines = typeof content === 'string'
     ? content.split('\n')
     : content;
 
-  // ANSI-aware word wrapping: preserves ANSI codes during wrapping
+  // ANSI-aware word wrapping: preserves ANSI codes across wrap boundaries
   const wrapped = [];
   for (const line of lines) {
-    const vLen = visibleLen(line);
-    if (vLen <= innerWidth) {
-      wrapped.push(line);
-    } else {
-      // For lines with ANSI codes, we need to track active codes
-      // Simple approach: strip, wrap, re-apply per-line styling
-      const stripped = stripAnsi(line);
-      const words = stripped.split(' ');
-      let current = '';
-      for (const word of words) {
-        const test = current ? current + ' ' + word : word;
-        if (test.length > innerWidth && current) {
-          wrapped.push(current);
-          current = word;
-        } else {
-          current = test;
-        }
-      }
-      if (current) wrapped.push(current);
-    }
+    for (const w of wrapLine(line, innerWidth)) wrapped.push(w);
   }
 
   const w = maxWidth;
@@ -97,13 +173,16 @@ export function box(content, options = {}) {
     return line + ' '.repeat(spaces);
   }
 
-  const indentStr = options.indent || '';
-
   // Top border
   if (title) {
-    const t = ` ${title} `;
-    const sideLen = Math.floor((w - 2 - t.length) / 2);
-    const r = w - 2 - sideLen - t.length;
+    // Truncate title if it's longer than the available border space
+    const titleVis = visibleLen(title);
+    const maxTitle = Math.max(0, w - 4);  // 2 for corners + at least 1 h on each side
+    const shown = titleVis > maxTitle ? truncate(title, maxTitle) : title;
+    const t = ` ${shown} `;
+    const tLen = visibleLen(t);
+    const sideLen = Math.max(0, Math.floor((w - 2 - tLen) / 2));
+    const r = Math.max(0, w - 2 - sideLen - tLen);
     writeln(
       indentStr +
       colorFn(border.tl + border.h.repeat(sideLen)) +
@@ -111,12 +190,12 @@ export function box(content, options = {}) {
       colorFn(border.h.repeat(r) + border.tr)
     );
   } else {
-    writeln(indentStr + colorFn(border.tl + border.h.repeat(w - 2) + border.tr));
+    writeln(indentStr + colorFn(border.tl + border.h.repeat(Math.max(0, w - 2)) + border.tr));
   }
 
-  // Padding top
-  for (let i = 0; i < Math.floor(padding / 2); i++) {
-    writeln(indentStr + colorFn(border.v) + ' '.repeat(w - 2) + colorFn(border.v));
+  // Padding top (full padding rows, not halved)
+  for (let i = 0; i < padding; i++) {
+    writeln(indentStr + colorFn(border.v) + ' '.repeat(Math.max(0, w - 2)) + colorFn(border.v));
   }
 
   // Content lines
@@ -131,24 +210,26 @@ export function box(content, options = {}) {
   }
 
   // Padding bottom
-  for (let i = 0; i < Math.floor(padding / 2); i++) {
-    writeln(indentStr + colorFn(border.v) + ' '.repeat(w - 2) + colorFn(border.v));
+  for (let i = 0; i < padding; i++) {
+    writeln(indentStr + colorFn(border.v) + ' '.repeat(Math.max(0, w - 2)) + colorFn(border.v));
   }
 
-  // Footer divider
+  // Footer
   if (footer) {
-    writeln(indentStr + colorFn(border.ml + border.h.repeat(w - 2) + border.mr));
-    const spaces = Math.max(0, innerWidth - stripAnsi(footer).length);
+    writeln(indentStr + colorFn(border.ml + border.h.repeat(Math.max(0, w - 2)) + border.mr));
+    // Truncate footer if too wide for inner width
+    const footerText = visibleLen(footer) > innerWidth ? truncate(footer, innerWidth) : footer;
+    const aligned = padEnd(`${colors.slate}${footerText}${colors.r}`, innerWidth);
     writeln(
       indentStr +
       colorFn(border.v) +
-      pad + `${colors.slate}${footer}${colors.r}` + ' '.repeat(spaces) + pad +
+      pad + aligned + pad +
       colorFn(border.v)
     );
   }
 
   // Bottom border
-  writeln(indentStr + colorFn(border.bl + border.h.repeat(w - 2) + border.br));
+  writeln(indentStr + colorFn(border.bl + border.h.repeat(Math.max(0, w - 2)) + border.br));
 }
 
 // ─── Columns layout ───────────────────────────────────────────────────────
@@ -157,6 +238,7 @@ export function columns(data, options = {}) {
   const total  = options.width || cols();
   const gap    = options.gap   || 3;
   const n      = data.length;
+  if (n === 0) return;
   const colW   = Math.floor((total - gap * (n - 1)) / n);
 
   const heights = data.map(col =>

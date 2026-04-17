@@ -33,7 +33,7 @@ async function typewriter(text, delay = 18) {
 }
 
 function sectionDivider(label, gradientPreset = GRADIENTS.neon) {
-  const w = cols();
+  const w = Math.min(cols(), 88);
   writeln();
   writeln(gradient('━'.repeat(w), ...gradientPreset));
   writeln(`  ${c.slate}${c.b}${label}${c.r}`);
@@ -49,8 +49,9 @@ async function splash() {
 
   banner('LUMI', { gradient: GRADIENTS.neon, align: 'center', char: '█', gap: 2 });
 
+  const w = cols();
   const label = 'terminal ui · zero deps';
-  const tw = ' '.repeat(Math.max(0, Math.floor((cols() - label.length) / 2)));
+  const tw = ' '.repeat(Math.max(0, Math.floor((w - visibleLen(label)) / 2)));
   write(`${tw}${c.slate}`);
   await typewriter(label, fast ? 3 : 20);
   writeln();
@@ -63,7 +64,7 @@ async function splash() {
     badge('ESM', { type: 'warning' }),
   ];
   const statsStr = stats.join('  ');
-  const sw = ' '.repeat(Math.max(0, Math.floor((cols() - visibleLen(statsStr)) / 2)));
+  const sw = ' '.repeat(Math.max(0, Math.floor((w - visibleLen(statsStr)) / 2)));
   writeln(sw + statsStr);
   writeln();
   await pause(280);
@@ -553,13 +554,16 @@ async function demoPager() {
 // ─── Closer ───────────────────────────────────────────────────────────────
 
 async function closer() {
-  writeln(gradient('━'.repeat(cols()), ...GRADIENTS.fire));
+  const w = cols();
+  const dividerW = Math.min(w, 88);
+  const dividerIndent = ' '.repeat(Math.max(0, Math.floor((w - dividerW) / 2)));
+  writeln(dividerIndent + gradient('━'.repeat(dividerW), ...GRADIENTS.fire));
   writeln();
 
   banner('DONE', { gradient: GRADIENTS.neon, align: 'center', gap: 2 });
 
   const boxW = 46;
-  const boxIndent = ' '.repeat(Math.max(0, Math.floor((cols() - boxW) / 2)));
+  const boxIndent = ' '.repeat(Math.max(0, Math.floor((w - boxW) / 2)));
   box(
     [
       `  ${c.sage}$${c.r}  ${c.chalk}npm install @nijil71/lumi-cli${c.r}`,
@@ -570,7 +574,7 @@ async function closer() {
   writeln();
 
   const url = 'github.com/nijil71/Lumi';
-  const center = Math.max(0, Math.floor((cols() - url.length) / 2));
+  const center = Math.max(0, Math.floor((w - url.length) / 2));
   writeln(' '.repeat(center) + `${c.graphite}${url}${c.r}`);
   writeln();
   write(ansi.show());

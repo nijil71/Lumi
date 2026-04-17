@@ -69,6 +69,24 @@ export declare function visibleLen(str: string): number;
 export declare function padEnd(str: string, width: number, char?: string): string;
 export declare function truncate(str: string, width: number): string;
 
+/** Terminal column width of a single Unicode code point (0, 1, or 2). */
+export declare function charWidth(cp: number | null | undefined): 0 | 1 | 2;
+
+/**
+ * Rebuild the color palette — call after modifying NO_COLOR / FORCE_COLOR at
+ * runtime (useful in tests). Returns the new underlying palette object.
+ */
+export declare function refreshPalette(): typeof c;
+
+/**
+ * Register a cleanup function to run on SIGINT / SIGTERM / normal exit.
+ * Used internally by spinners, progress bars, pager, prompts, etc. to
+ * guarantee the terminal cursor and screen state are always restored.
+ *
+ * Returns an unregister function to call when cleanup is no longer needed.
+ */
+export declare function registerCleanup(fn: () => void): () => void;
+
 /** RGB tuple [r, g, b] where each value is 0–255. */
 export type RGB = [number, number, number];
 
@@ -170,6 +188,7 @@ export declare class MultiSpinner {
 export type ProgressStyle = 'block' | 'shaded' | 'bracket' | 'thin' | 'brutalist' | 'dots';
 
 export interface ProgressBarOptions {
+  /** Total units of work. Set to `0` for an indeterminate (bouncing) bar. */
   total?: number;
   current?: number;
   style?: ProgressStyle;
@@ -195,6 +214,7 @@ export declare function progressBar(options?: ProgressBarOptions): ProgressBar;
 export declare class MultiBar {
   add(options?: ProgressBarOptions): number;
   update(idx: number, current: number, label?: string): void;
+  increment(idx: number, by?: number, label?: string): void;
   start(): this;
   tick(): this;
   stop(): void;

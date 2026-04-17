@@ -1,6 +1,6 @@
 // ─── lumi-cli / statusbar ─────────────────────────────────────────────────
 
-import { write, ansi, c as colors, cols, rows, stripAnsi, isTTY } from '../ansi.js';
+import { write, ansi, c as colors, cols, rows, visibleLen, truncate, isTTY, registerCleanup } from '../ansi.js';
 
 /**
  * A persistent status line pinned to the bottom row of the terminal.
@@ -22,6 +22,8 @@ export class StatusBar {
     this._right  = options.right  ?? '';
     this._bg     = colors.bgGraphite;
     this._fg     = colors.chalk;
+    this._unregister = null;
+    this._rendered = false;
   }
 
   /**
@@ -39,29 +41,39 @@ export class StatusBar {
   render() {
     if (!isTTY()) return this;
 
+    // Register a cleanup on first render so the bottom row is cleared
+    // on exit / Ctrl+C even if caller forgets clear().
+    if (!this._rendered) {
+      this._rendered = true;
+      this._unregister = registerCleanup(() => this._cleanup());
+    }
+
     const w          = cols();
     const row        = rows();
-    const leftVis    = stripAnsi(this._left);
-    const centerVis  = stripAnsi(this._center);
-    const rightVis   = stripAnsi(this._right);
+    const leftVis    = visibleLen(this._left);
+    const centerVis  = visibleLen(this._center);
+    const rightVis   = visibleLen(this._right);
 
     let line;
     if (this._center) {
-      const sideSpace = Math.floor((w - centerVis.length) / 2);
-      const leftPad   = Math.max(0, sideSpace - leftVis.length);
-      const rightPad  = Math.max(0, w - leftVis.length - leftPad - centerVis.length - rightVis.length);
+      const sideSpace = Math.floor((w - centerVis) / 2);
+      const leftPad   = Math.max(0, sideSpace - leftVis);
+      const rightPad  = Math.max(0, w - leftVis - leftPad - centerVis - rightVis);
       line = this._left + ' '.repeat(leftPad) + this._center + ' '.repeat(rightPad) + this._right;
     } else {
-      const gap = Math.max(0, w - leftVis.length - rightVis.length);
+      const gap = Math.max(0, w - leftVis - rightVis);
       line = this._left + ' '.repeat(gap) + this._right;
     }
+
+    // Truncate to terminal width honouring ANSI + wide chars
+    const shown = visibleLen(line) > w ? truncate(line, w) : line;
 
     write(
       ansi.save() +
       ansi.pos(row, 1) +
       ansi.clearLine() +
       this._bg + this._fg +
-      line.slice(0, w) +
+      shown +
       colors.r +
       ansi.restore()
     );
@@ -71,13 +83,20 @@ export class StatusBar {
   /** Remove the status line and restore the bottom row. */
   clear() {
     if (!isTTY()) return this;
+    this._cleanup();
+    if (this._unregister) { this._unregister(); this._unregister = null; }
+    this._rendered = false;
+    return this;
+  }
+
+  _cleanup() {
+    if (!isTTY()) return;
     write(
       ansi.save() +
       ansi.pos(rows(), 1) +
       ansi.clearLine() +
       ansi.restore()
     );
-    return this;
   }
 }
 

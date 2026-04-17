@@ -60,9 +60,11 @@ export function banner(text, options = {}) {
   const rowCount = 5;
   const width  = cols();
 
+  // Build rows without the leading pad — we'll add indent below based on
+  // the alignment mode so right-align math doesn't double-count it.
   const lines = [];
   for (let row = 0; row < rowCount; row++) {
-    let line = ' '.repeat(pad);
+    let line = '';
     for (let gi = 0; gi < glyphs.length; gi++) {
       const g = glyphs[gi];
       const rowStr = g[row].replace(/█/g, char);
@@ -76,8 +78,8 @@ export function banner(text, options = {}) {
   const offset = align === 'center'
     ? Math.max(0, Math.floor((width - rawLen) / 2))
     : align === 'right'
-      ? Math.max(0, width - rawLen - pad)
-      : 0;
+      ? Math.max(pad, width - rawLen - pad)
+      : pad;
 
   const indent = ' '.repeat(offset);
 
@@ -85,7 +87,7 @@ export function banner(text, options = {}) {
   if (options.gradient && colorLevel() >= 3) {
     const [fromRGB, toRGB] = options.gradient;
     for (const line of lines) {
-      writeln(gradient(indent + line, fromRGB, toRGB));
+      writeln(indent + gradient(line, fromRGB, toRGB));
     }
   } else {
     for (const line of lines) {

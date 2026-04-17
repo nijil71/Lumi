@@ -1,6 +1,6 @@
 // ─── lumi-cli / table ────────────────────────────────────────────────────
 
-import { writeln, c as colors, cols, visibleLen, stripAnsi, truncate, getColorTheme } from '../ansi.js';
+import { writeln, c as colors, cols, visibleLen, truncate, getColorTheme } from '../ansi.js';
 
 const BORDERS = {
   single: { tl:'┌',tr:'┐',bl:'└',br:'┘',h:'─',v:'│',ml:'├',mr:'┤',tm:'┬',bm:'┴',x:'┼' },
@@ -15,28 +15,31 @@ export function table(data, options = {}) {
   const border     = BORDERS[options.border || 'single'];
   const colorFn    = getColorTheme(options.color || 'default');
   const headers    = options.headers || Object.keys(data[0]);
-  const maxW       = options.width   || cols();
   const alignOpts  = options.align   || {};   // { columnName: 'right' | 'center' | 'left' }
   const maxWidths  = options.maxWidth || {};   // { columnName: number }
+  const zebra      = options.zebra !== false;  // zebra striping on by default
 
-  // Compute column widths
+  // Whether the border style actually has cell separators. When it doesn't
+  // (minimal border), corners are empty strings and we need a different
+  // horizontal rule calculation for the header divider.
+  const hasBorder = Boolean(border.tl);
+
+  // Compute column widths using visibleLen (wide-char aware)
   const colWidths = headers.map((h) => {
     const dataMax = Math.max(...data.map(row => {
       const val = row[h] !== undefined ? String(row[h]) : '';
       return visibleLen(val);
     }));
     let w = Math.max(visibleLen(h), dataMax);
-    // Apply max width constraint
     if (maxWidths[h] && w > maxWidths[h]) {
       w = maxWidths[h];
     }
     return w;
   });
 
-  // Pad/align a cell value
+  // Pad/align a cell value (no color applied here — color is applied by caller)
   function alignCell(str, w, alignment) {
     const s = String(str ?? '');
-    // Truncate if exceeding max width
     const vis = visibleLen(s);
     const text = vis > w ? truncate(s, w) : s;
     const vl = visibleLen(text);
@@ -50,21 +53,19 @@ export function table(data, options = {}) {
       const right = spaces - left;
       return ' '.repeat(left) + text + ' '.repeat(right);
     }
-    // left (default)
     return text + ' '.repeat(spaces);
   }
 
   const v = border.v;
-
-  // Header color
   const hdrColor = (s) => `${colors.chalk}${colors.b}${s}${colors.r}`;
 
   // ── Top border ──
-  if (border.tl) {
-    const line = border.tl +
+  if (hasBorder) {
+    writeln(colorFn(
+      border.tl +
       colWidths.map(w => border.h.repeat(w + 2)).join(border.tm) +
-      border.tr;
-    writeln(colorFn(line));
+      border.tr
+    ));
   }
 
   // ── Header ──
@@ -75,35 +76,46 @@ export function table(data, options = {}) {
   writeln(colorFn(v) + hdrCells.join(colorFn(v)) + colorFn(v));
 
   // ── Header divider ──
-  if (border.ml) {
-    const line = border.ml +
+  if (hasBorder) {
+    writeln(colorFn(
+      border.ml +
       colWidths.map(w => border.h.repeat(w + 2)).join(border.x) +
-      border.mr;
-    writeln(colorFn(line));
+      border.mr
+    ));
   } else {
-    writeln(colorFn(border.h.repeat(colWidths.reduce((a,b)=>a+b+3,1))));
+    // Minimal: width = sum(colW + 2 padding) + (n-1) single-char separators.
+    const totalW = colWidths.reduce((a, b) => a + b + 2, 0) + (colWidths.length - 1);
+    writeln(colorFn(border.h.repeat(totalW)));
   }
 
   // ── Data rows ──
+  //
+  // For zebra striping we apply `dim` to the whole row and use a less-bright
+  // fg (`mist`) on odd rows. The old code concatenated `dim` + `fog`, but a
+  // later color override (like `fog`) fully resets prior SGR flags, so the
+  // dim was silently discarded. Applying dim + a distinct fg correctly
+  // differentiates zebra rows.
   for (let ri = 0; ri < data.length; ri++) {
     const row    = data[ri];
-    const isEven = ri % 2 === 0;
-    const rowBg  = isEven ? '' : `${colors.d}`;
+    const isOdd  = ri % 2 === 1;
+    const rowDim = (zebra && isOdd) ? colors.d : '';
+    const rowFg  = (zebra && isOdd) ? colors.mist : colors.fog;
 
     const cells = headers.map((h, ci) => {
       const val = row[h] !== undefined ? String(row[h]) : '';
       const alignment = alignOpts[h] || 'left';
       const aligned = alignCell(val, colWidths[ci], alignment);
-      return ` ${rowBg}${colors.fog}${aligned}${colors.r} `;
+      return ` ${rowDim}${rowFg}${aligned}${colors.r} `;
     });
     writeln(colorFn(v) + cells.join(colorFn(v)) + colorFn(v));
   }
 
   // ── Bottom border ──
-  if (border.bl) {
-    const line = border.bl +
+  if (hasBorder) {
+    writeln(colorFn(
+      border.bl +
       colWidths.map(w => border.h.repeat(w + 2)).join(border.bm) +
-      border.br;
-    writeln(colorFn(line));
+      border.br
+    ));
   }
 }
