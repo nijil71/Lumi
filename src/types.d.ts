@@ -473,11 +473,84 @@ export interface PagerOptions {
   title?: string;
 }
 
-/** 
- * Enters an alternate screen buffer to paginate large amounts of text. 
+/**
+ * Enters an alternate screen buffer to paginate large amounts of text.
  * Supports arrow keys, page up/down, j/k, and q to quit.
  */
 export declare function pager(
   text: string | string[],
   options?: PagerOptions
 ): Promise<void>;
+
+// ─── Layout ────────────────────────────────────────────────────────────
+
+/**
+ * Grid track size. Accepts:
+ *   - a positive number (fixed cells)
+ *   - `"20"` (fixed, string form)
+ *   - `"*"` (flex, weight 1) or `"N*"` (flex, weight N)
+ *   - `"40%"` (percent of the parent dimension)
+ */
+export type LayoutTrack = number | string;
+
+/** A single-axis position — either a single track index or an inclusive `[start, end]` span. */
+export type LayoutAxis = number | [number, number];
+
+/** Content for a cell. Functions are re-invoked on every render. */
+export type LayoutContent =
+  | string
+  | string[]
+  | (() => string | string[])
+  | null
+  | undefined;
+
+export interface LayoutCell {
+  row: LayoutAxis;
+  col: LayoutAxis;
+  border?: BorderStyle;
+  /** Inline title rendered into the top border. Ignored unless `border` is set. */
+  title?: string;
+  /** Color applied to the border + title, not the interior content. */
+  color?: ColorName;
+}
+
+export interface LayoutOptions {
+  rows?: LayoutTrack[];
+  cols?: LayoutTrack[];
+  cells?: Record<string, LayoutCell>;
+}
+
+/**
+ * Grid-based region renderer. Splits the terminal into named cells and updates
+ * each independently via line-level diffing. Uses the alternate screen buffer
+ * for the lifetime of `start()`…`stop()`.
+ *
+ * @example
+ * const lo = new Layout({
+ *   rows:  [1, '*', 1],
+ *   cols:  [24, '*'],
+ *   cells: {
+ *     header:  { row: 0, col: [0, 1] },
+ *     sidebar: { row: 1, col: 0, border: 'single', title: 'Nav' },
+ *     main:    { row: 1, col: 1, border: 'rounded', title: 'Logs' },
+ *     footer:  { row: 2, col: [0, 1] },
+ *   },
+ * });
+ * lo.start();
+ * lo.set('header', 'Dashboard');
+ * lo.set('main',   () => logLines.slice(-50).join('\n'));
+ * lo.render();
+ * // ...later
+ * lo.stop();
+ */
+export declare class Layout {
+  constructor(options?: LayoutOptions);
+  set(name: string, content: LayoutContent): this;
+  /** Discard the diff cache so the next `render()` rewrites every line. */
+  invalidate(): this;
+  start(): this;
+  render(): this;
+  stop(): this;
+}
+
+export declare function layout(options?: LayoutOptions): Layout;

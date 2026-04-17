@@ -55,6 +55,7 @@ lumi-cli
 ├── Diff          inline    ·  added + removed ·  word-diff
 ├── Sparkline     bar chart ·  min/max + NaN   ·  colors
 ├── StatusBar     sticky    ·  left + right    ·  updates
+├── Layout        grid cells ·  diffed renders ·  resize reflow
 ├── Tasks         runner    ·  orchestrator    ·  graceful fails
 ├── Pager         raw mode  ·  terminal paginator · zero deps
 └── Prompts       input, select, multiSelect, autocomplete, confirm
@@ -474,6 +475,47 @@ bar.clear();
 
 ---
 
+## Layout
+
+Grid-based region renderer. Split the terminal into named cells and update each independently. Uses the alternate screen buffer for its lifetime (like `pager`) plus per-cell line-level diffing — only the lines that actually change between frames get rewritten, so updating one cell in a busy dashboard doesn't flicker the rest.
+
+```js
+import { Layout, sparkline, c } from '@nijil71/lumi-cli';
+
+const lo = new Layout({
+  rows: [3, '*', 1],            // header / flex main / footer
+  cols: [28, '*'],              // sidebar / flex main
+  cells: {
+    header:  { row: 0, col: [0, 1], border: 'rounded', title: 'dashboard' },
+    sidebar: { row: 1, col: 0,      border: 'single',  title: 'metrics', color: 'azure' },
+    main:    { row: 1, col: 1,      border: 'single',  title: 'events',  color: 'sage'  },
+    footer:  { row: 2, col: [0, 1] },
+  },
+});
+
+lo.start();
+
+lo.set('header', 'Live metrics · press Ctrl+C to quit');
+lo.set('sidebar', () => [
+  `CPU  ${sparkline(cpu)}  ${cpu.at(-1)}%`,
+  `MEM  ${sparkline(mem)}  ${mem.at(-1)}%`,
+]);
+lo.set('main', () => events.slice(-50).join('\n'));
+
+setInterval(() => lo.render(), 200);
+// lo.stop() exits the alt screen; Ctrl+C is handled automatically
+```
+
+**Track specs** — `number` (fixed cells), `"*"` or `"N*"` (flex weight), `"40%"` (percent). The last flex track absorbs rounding drift.
+
+**Cell content** — `string`, `string[]`, or `() => string | string[]`. Functions are re-invoked on every `render()`, so you can point a cell at live state and just call `render()` on a timer.
+
+**Cell options** — `border` (6 styles: `single | double | rounded | thick | dashed | ascii`), `title`, `color`. Border+title get painted with the cell color; interior content keeps its own ANSI.
+
+**Resize-aware** — `SIGWINCH` triggers a full repaint with re-resolved track sizes. **Non-TTY fallback** — each cell prints sequentially with a header label, so piped output stays readable.
+
+---
+
 ## Prompts
 
 Zero-dependency interactive prompts. Arrow keys, backspace, Ctrl+C safe. Non-TTY environments automatically return defaults.
@@ -564,6 +606,7 @@ npx lumi --help
 | Tree renderer | ✔ built-in | not available |
 | Diff viewer | ✔ built-in | not available |
 | Status bar | ✔ built-in | not available |
+| Grid layout / dashboard | ✔ built-in | blessed / neo-blessed — heavy |
 | Interactive prompts | ✔ built-in | inquirer — separate |
 | OSC 8 hyperlinks | ✔ built-in | not available |
 | Consistent palette | ✔ shared system | DIY |
