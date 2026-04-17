@@ -10,12 +10,8 @@ const LCS_CELL_LIMIT = 4_000_000;
 // ─── LCS-based line differ ────────────────────────────────────────────────
 
 /**
- * Compute a line-level diff via LCS backtracking.
+ * Compute a line-level diff via Myers' diff algorithm (linear space O(N+M)).
  * Returns hunks: { type: 'equal'|'add'|'remove', value: string }[]
- *
- * Uses a single flat Int32Array (rather than an array-of-Int32Arrays) to
- * reduce per-row overhead. For inputs that would exceed the cell limit we
- * fall back to a simple anchor-based diff to avoid running out of memory.
  */
 function computeDiff(aLines, bLines) {
   const m = aLines.length;
@@ -25,79 +21,103 @@ function computeDiff(aLines, bLines) {
   if (m === 0) return bLines.map(v => ({ type: 'add', value: v }));
   if (n === 0) return aLines.map(v => ({ type: 'remove', value: v }));
 
-  if ((m + 1) * (n + 1) > LCS_CELL_LIMIT) {
-    return naiveDiff(aLines, bLines);
-  }
-
-  const stride = n + 1;
-  const dp = new Int32Array((m + 1) * stride);
-
-  for (let i = 1; i <= m; i++) {
-    const ai = aLines[i - 1];
-    const base = i * stride;
-    const prevBase = (i - 1) * stride;
-    for (let j = 1; j <= n; j++) {
-      dp[base + j] = ai === bLines[j - 1]
-        ? dp[prevBase + (j - 1)] + 1
-        : Math.max(dp[prevBase + j], dp[base + (j - 1)]);
-    }
-  }
-
-  // Backtrack
   const hunks = [];
-  let i = m, j = n;
-  while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && aLines[i - 1] === bLines[j - 1]) {
-      hunks.unshift({ type: 'equal',  value: aLines[i - 1] });
-      i--; j--;
-    } else if (j > 0 && (i === 0 || dp[i * stride + (j - 1)] >= dp[(i - 1) * stride + j])) {
-      hunks.unshift({ type: 'add',    value: bLines[j - 1] });
-      j--;
-    } else {
-      hunks.unshift({ type: 'remove', value: aLines[i - 1] });
-      i--;
-    }
-  }
-  return hunks;
-}
 
-/**
- * Fallback diff for very large inputs: walks both sides in lockstep, pairing
- * lines when they match and emitting add/remove otherwise. Not minimal, but
- * correct and bounded-memory.
- */
-function naiveDiff(aLines, bLines) {
-  const hunks = [];
-  let i = 0, j = 0;
-  while (i < aLines.length || j < bLines.length) {
-    if (i < aLines.length && j < bLines.length && aLines[i] === bLines[j]) {
-      hunks.push({ type: 'equal', value: aLines[i] });
-      i++; j++;
-    } else if (j < bLines.length && (i >= aLines.length || aLines[i] !== bLines[j])) {
-      // Look ahead a few lines to see if the a-side will reappear soon — if
-      // so, treat this b-line as an add; otherwise treat the a-line as a remove.
-      const aheadLimit = Math.min(j + 20, bLines.length);
-      let foundAhead = -1;
-      if (i < aLines.length) {
-        for (let k = j; k < aheadLimit; k++) {
-          if (bLines[k] === aLines[i]) { foundAhead = k; break; }
+  function solve(a0, a1, b0, b1) {
+    if (a0 >= a1) {
+      for (let i = b0; i < b1; i++) hunks.push({ type: 'add', value: bLines[i] });
+      return;
+    }
+    if (b0 >= b1) {
+      for (let i = a0; i < a1; i++) hunks.push({ type: 'remove', value: aLines[i] });
+      return;
+    }
+
+    // Direct match optimization for prefix/suffix
+    while (a0 < a1 && b0 < b1 && aLines[a0] === bLines[b0]) {
+      hunks.push({ type: 'equal', value: aLines[a0] });
+      a0++; b0++;
+    }
+    if (a0 >= a1 || b0 >= b1) return solve(a0, a1, b0, b1);
+
+    const suffixHunks = [];
+    while (a0 < a1 && b0 < b1 && aLines[a1 - 1] === bLines[b1 - 1]) {
+      suffixHunks.unshift({ type: 'equal', value: aLines[a1 - 1] });
+      a1--; b1--;
+    }
+
+    const { x, y } = findMiddleSnake(a0, a1, b0, b1);
+    solve(a0, x, b0, y);
+    solve(x, a1, y, b1);
+    for (const h of suffixHunks) hunks.push(h);
+  }
+
+  /** Find the middle snake of the two sequences in linear space */
+  function findMiddleSnake(a0, a1, b0, b1) {
+    const N = a1 - a0;
+    const M = b1 - b0;
+    const delta = N - M;
+    const size = N + M + 2;
+    const kv = new Int32Array(size * 2 + 1);
+    const rv = new Int32Array(size * 2 + 1);
+
+    kv.fill(-1);
+    rv.fill(-1);
+
+    const offset = size;
+
+    for (let d = 0; d <= Math.ceil((N + M) / 2); d++) {
+      // Forward
+      for (let k = -d; k <= d; k += 2) {
+        let x, y;
+        if (k === -d || (k !== d && kv[k - 1 + offset] < kv[k + 1 + offset])) {
+          x = kv[k + 1 + offset];
+        } else {
+          x = kv[k - 1 + offset] + 1;
+        }
+        y = x - k;
+        if (d === 0) x = 0, y = 0;
+
+        while (x < N && y < M && aLines[a0 + x] === bLines[b0 + y]) {
+          x++; y++;
+        }
+        kv[k + offset] = x;
+
+        if (delta % 2 !== 0 && k >= delta - (d - 1) && k <= delta + (d - 1)) {
+          if (kv[k + offset] >= (N - rv[delta - k + offset])) {
+            return { x: a0 + x, y: b0 + y };
+          }
         }
       }
-      if (foundAhead > -1) {
-        hunks.push({ type: 'add', value: bLines[j] });
-        j++;
-      } else if (i < aLines.length) {
-        hunks.push({ type: 'remove', value: aLines[i] });
-        i++;
-      } else {
-        hunks.push({ type: 'add', value: bLines[j] });
-        j++;
+
+      // Backward
+      for (let k = -d; k <= d; k += 2) {
+        let x, y;
+        if (k === -d || (k !== d && rv[k - 1 + offset] < rv[k + 1 + offset])) {
+          x = rv[k + 1 + offset];
+        } else {
+          x = rv[k - 1 + offset] + 1;
+        }
+        y = x - k;
+        if (d === 0) x = 0, y = 0;
+
+        while (x < N && y < M && aLines[a1 - 1 - x] === bLines[b1 - 1 - y]) {
+          x++; y++;
+        }
+        rv[k + offset] = x;
+
+        if (delta % 2 === 0 && k >= -delta - d && k <= -delta + d) {
+          if (rv[k + offset] >= (N - kv[-delta - k + offset])) {
+            return { x: a1 - x, y: b1 - y };
+          }
+        }
       }
-    } else {
-      hunks.push({ type: 'remove', value: aLines[i] });
-      i++;
     }
+    // Fallback
+    return { x: a0 + Math.floor(N / 2), y: b0 + Math.floor(M / 2) };
   }
+
+  solve(0, m, 0, n);
   return hunks;
 }
 

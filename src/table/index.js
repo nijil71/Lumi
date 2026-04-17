@@ -83,8 +83,9 @@ export function table(data, options = {}) {
       border.mr
     ));
   } else {
-    // Minimal: width = sum(colW + 2 padding) + (n-1) single-char separators.
-    const totalW = colWidths.reduce((a, b) => a + b + 2, 0) + (colWidths.length - 1);
+    // Minimal: width = left border + sum(colW + 2 padding) + (n-1) separators + right border.
+    // Each separator/border 'v' is 1 char wide for the minimal style.
+    const totalW = colWidths.reduce((a, b) => a + b + 2, 0) + colWidths.length + 1;
     writeln(colorFn(border.h.repeat(totalW)));
   }
 

@@ -1,7 +1,7 @@
 // ─── lumi-cli / banner ──────────────────────────────────────────────────
 // Custom 5-row block letterforms — original glyph design
 
-import { writeln, c as colors, cols, getColorTheme, gradient, colorLevel } from '../ansi.js';
+import { writeln, c as colors, cols, getColorTheme, gradient, colorLevel, foldASCII } from '../ansi.js';
 
 // Each char: 5 rows of 5 chars each (monospaced block font)
 const GLYPHS = {
@@ -49,7 +49,7 @@ const GLYPHS = {
 };
 
 export function banner(text, options = {}) {
-  const upper  = text.toUpperCase();
+  const upper  = foldASCII(text).toUpperCase();
   const colorFn = getColorTheme(options.color || 'chalk');
   const char   = options.char   || '█';
   const gap    = options.gap    || 1;

@@ -419,15 +419,29 @@ export function truncate(str, width) {
   let i = 0;
   const s = String(str);
 
+  let activeSgr = [];
   while (i < s.length) {
-    // ANSI escape sequence — copy through without counting width
+    // ANSI escape sequence — copy through and track SGR state
     if (s[i] === '\x1b') {
       const tail = s.slice(i);
       const m = tail.match(/^\x1b\][^\x07]*\x07|^\x1b\[[\?!]?[0-9;]*[a-zA-Z~]|^\x1b[78]/);
       if (m) {
-        result += m[0];
-        i += m[0].length;
+        const full = m[0];
+        result += full;
+        i += full.length;
         sawAnsi = true;
+        // If it's an SGR sequence (\x1b[...m), it might change color/style
+        if (full.startsWith('\x1b[') && full.endsWith('m')) {
+          const codes = full.slice(2, -1).split(';');
+          for (const code of codes) {
+            const num = parseInt(code, 10);
+            if (num === 0 || isNaN(num) || (num >= 30 && num <= 37) || (num >= 90 && num <= 97) || (num >= 38 && num <= 39)) {
+              // Basic color/reset detection — this is still a simplification but
+              // ensures the ellipsis inherits the most recently set color.
+              if (num === 0) activeSgr = [];
+            }
+          }
+        }
         continue;
       }
     }
@@ -446,5 +460,24 @@ export function truncate(str, width) {
     i += ch.length;
   }
 
+  // If we truncated and had ANSI, append ellipsis and reset.
+  // The ellipsis inherits the last open SGR because they are in `result`.
   return result + '…' + (sawAnsi ? ansi.reset : '');
+}
+
+/**
+ * Basic ASCII folder to map common accented characters to their base equivalents.
+ * Prevents characters from being lost when mapping to custom glyph sets.
+ */
+export function foldASCII(str) {
+  return String(str)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x00-\x7F]/g, ch => {
+      const map = {
+        'æ': 'ae', 'ø': 'o', 'å': 'a', 'œ': 'oe', 'ß': 'ss',
+        'Æ': 'AE', 'Ø': 'O', 'Å': 'A', 'Œ': 'OE'
+      };
+      return map[ch] || ' ';
+    });
 }
