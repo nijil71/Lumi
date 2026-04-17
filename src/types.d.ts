@@ -518,6 +518,27 @@ export interface LayoutOptions {
   rows?: LayoutTrack[];
   cols?: LayoutTrack[];
   cells?: Record<string, LayoutCell>;
+  /**
+   * Enable shared-border grid mode. Instead of each cell drawing its own
+   * border, Layout draws one frame with proper T-junctions where cells
+   * meet. Cells set via `cells` do NOT need a `border` in this mode.
+   */
+  gridBorder?: BorderStyle;
+  /** Optional palette color for the grid frame (and titles it carries). */
+  gridColor?: ColorName;
+}
+
+export interface LayoutSketchOptions {
+  /** Override auto-detected border style. */
+  gridBorder?: BorderStyle;
+  gridColor?: ColorName;
+  /** Override flex-weight track sizes with explicit specs. */
+  rows?: LayoutTrack[];
+  cols?: LayoutTrack[];
+  /** Per-cell titles to embed in the grid's top edge. */
+  titles?: Record<string, string>;
+  /** Per-cell content-style overrides (color on interior text etc.). */
+  cells?: Record<string, Partial<LayoutCell>>;
 }
 
 /**
@@ -551,6 +572,34 @@ export declare class Layout {
   start(): this;
   render(): this;
   stop(): this;
+
+  /**
+   * Build a Layout from an ASCII or Unicode wireframe. The sketch IS the
+   * layout — draw cells with box-drawing characters, label them, and the
+   * parser infers tracks, spans, and border style from the drawing.
+   *
+   *   * Border style inferred from corner chars: ╭ rounded, ╔ double,
+   *     ┏ thick, ┌ single, ╌ dashed, `+` ascii.
+   *   * Cell names read from interior text OR the top-border text.
+   *   * Row/col sizes become flex weights proportional to drawn sizes.
+   *   * Identical labels across adjacent regions collapse into a span.
+   *
+   * @example
+   * const lo = Layout.sketch`
+   *   ╭──────────────╮
+   *   │   header     │
+   *   ├─ nav ─┬ main ┤
+   *   │       │      │
+   *   ├───────┴──────┤
+   *   │   footer     │
+   *   ╰──────────────╯
+   * `;
+   */
+  static sketch(
+    strings: TemplateStringsArray,
+    ...values: unknown[]
+  ): Layout;
+  static sketch(template: string, options?: LayoutSketchOptions): Layout;
 }
 
 export declare function layout(options?: LayoutOptions): Layout;

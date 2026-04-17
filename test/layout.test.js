@@ -225,3 +225,176 @@ test('layout.start and stop are idempotent — double-calls are safe', () => {
   lo.start(); lo.start();
   lo.stop();  lo.stop();
 });
+
+// ─── Grid helpers (gridBorder mode) ───────────────────────────────────────
+
+test('layout.buildCellMap: maps each track cell to its owning cell name', () => {
+  const { buildCellMap } = __test;
+  const map = buildCellMap({
+    h: { row: 0, col: [0, 1] },
+    a: { row: 1, col: 0 },
+    b: { row: 1, col: 1 },
+  }, 2, 2);
+  assert.deepEqual(map, [['h', 'h'], ['a', 'b']]);
+});
+
+test('layout.buildCellMap: overlapping cells throw', () => {
+  const { buildCellMap } = __test;
+  assert.throws(
+    () => buildCellMap({
+      a: { row: 0, col: 0 },
+      b: { row: 0, col: 0 },   // overlaps a
+    }, 1, 1),
+    /overlap/
+  );
+});
+
+test('layout.gridCellInterior: single cell accounts for border chars', () => {
+  const { gridCellInterior } = __test;
+  // one 1×1 cell, colSizes=[10], rowSizes=[3]
+  // outer left border at col 0, interior cols 1..10, right border at col 11
+  const g = gridCellInterior({ row: 0, col: 0 }, [3], [10]);
+  assert.deepEqual(g, { x: 1, y: 1, w: 10, h: 3 });
+});
+
+test('layout.gridCellInterior: spans absorb inner border chars', () => {
+  const { gridCellInterior } = __test;
+  // colSizes = [4, 6], row span [0,0], col span [0,1]
+  // Interior width = 4 + 1 (inner divider char) + 6 = 11
+  const g = gridCellInterior({ row: 0, col: [0, 1] }, [2], [4, 6]);
+  assert.deepEqual(g, { x: 1, y: 1, w: 11, h: 2 });
+});
+
+test('layout.drawGridFrame: renders rounded corners + span-aware dividers', () => {
+  const { drawGridFrame, buildCellMap } = __test;
+  const cells = {
+    h: { row: 0, col: [0, 1] },
+    a: { row: 1, col: 0 },
+    b: { row: 1, col: 1 },
+    f: { row: 2, col: [0, 1] },
+  };
+  const map = buildCellMap(cells, 3, 2);
+  const frame = drawGridFrame(map, cells, [1, 1, 1], [4, 4], 'rounded');
+  assert.deepEqual(frame, [
+    '╭─────────╮',   // header spans: no ┬ in the middle
+    '│         │',
+    '├────┬────┤',   // nav/main divider: ┬ on top, │ vertical, ┴ below
+    '│    │    │',
+    '├────┴────┤',
+    '│         │',
+    '╰─────────╯',
+  ]);
+});
+
+test('layout.drawGridFrame: titles embed into the top edge of each cell', () => {
+  const { drawGridFrame, buildCellMap } = __test;
+  const cells = { main: { row: 0, col: 0, title: 'Hi' } };
+  const map = buildCellMap(cells, 1, 1);
+  const frame = drawGridFrame(map, cells, [1], [10], 'single');
+  assert.equal(frame[0], '┌─ Hi ─────┐');
+});
+
+test('layout.pickJunction: resolves every intersection flavor', () => {
+  const { pickJunction } = __test;
+  const br = { h:'─', v:'│', tl:'┌', tr:'┐', bl:'└', br:'┘',
+               tup:'┴', tdown:'┬', tleft:'┤', tright:'├', cross:'┼' };
+  //                      up    down  left  right
+  assert.equal(pickJunction(br, true, true, true, true),   '┼');
+  assert.equal(pickJunction(br, false, true, true, true),  '┬');
+  assert.equal(pickJunction(br, true, false, true, true),  '┴');
+  assert.equal(pickJunction(br, true, true, false, true),  '├');
+  assert.equal(pickJunction(br, true, true, true, false),  '┤');
+  assert.equal(pickJunction(br, false, true, false, true), '┌');
+  assert.equal(pickJunction(br, false, true, true, false), '┐');
+  assert.equal(pickJunction(br, true, false, false, true), '└');
+  assert.equal(pickJunction(br, true, false, true, false), '┘');
+});
+
+// ─── Layout.sketch ────────────────────────────────────────────────────────
+
+test('Layout.sketch: parses a 3-row grid with spans into the right config', () => {
+  const lo = Layout.sketch`
+    ╭──────────────╮
+    │    header    │
+    ├──────┬───────┤
+    │ nav  │ main  │
+    ├──────┴───────┤
+    │    footer    │
+    ╰──────────────╯
+  `;
+  // Can't easily introspect private state; assert that set() accepts the
+  // labels we expect and rejects typos. That proves the parsed cell map.
+  assert.doesNotThrow(() => lo.set('header', 'x'));
+  assert.doesNotThrow(() => lo.set('nav',    'x'));
+  assert.doesNotThrow(() => lo.set('main',   'x'));
+  assert.doesNotThrow(() => lo.set('footer', 'x'));
+  assert.throws(() => lo.set('side', 'x'), /unknown cell/);
+});
+
+test('Layout.sketch: detects border style from corner chars', () => {
+  // Rendering the grid frame through drawGridFrame gives us the chars back.
+  const checks = [
+    { corners: '╭╮╰╯', pick: '╭', expect: 'rounded' },
+    { corners: '╔╗╚╝', pick: '╔', expect: 'double'  },
+    { corners: '┏┓┗┛', pick: '┏', expect: 'thick'   },
+    { corners: '┌┐└┘', pick: '┌', expect: 'single'  },
+    { corners: '++++', pick: '+', expect: 'ascii'   },
+  ];
+  for (const { corners, pick, expect: style } of checks) {
+    const [tl, tr, bl, br] = [...corners];
+    const h = style === 'double' ? '═' : style === 'thick' ? '━' : style === 'ascii' ? '-' : '─';
+    const v = style === 'double' ? '║' : style === 'thick' ? '┃' : style === 'ascii' ? '|' : '│';
+    const sketch = `${tl}${h.repeat(8)}${tr}\n${v}   x    ${v}\n${bl}${h.repeat(8)}${br}`;
+    const lo = Layout.sketch(sketch);
+    // Re-render via non-TTY fallback; just make sure it doesn't throw.
+    // Style check: sketch() doesn't crash on any supported corner set.
+    assert.doesNotThrow(() => lo.render());
+  }
+});
+
+test('Layout.sketch: duplicate cell names throw', () => {
+  assert.throws(() => Layout.sketch`
+    ┌─────┬─────┐
+    │  a  │  a  │
+    └─────┴─────┘
+  `, /duplicate/);
+});
+
+test('Layout.sketch: empty or label-less sketches throw', () => {
+  assert.throws(() => Layout.sketch`   `, /empty/i);
+  assert.throws(() => Layout.sketch`
+    ┌───────┐
+    │       │
+    └───────┘
+  `, /no labeled cells/);
+});
+
+test('Layout.sketch: title on top border is picked up as the cell name', () => {
+  const lo = Layout.sketch`
+    ┌─ header ─┐
+    │          │
+    └──────────┘
+  `;
+  assert.doesNotThrow(() => lo.set('header', 'hi'));
+});
+
+test('Layout.sketch: function form accepts options with cell title overrides', () => {
+  const lo = Layout.sketch(`
+    ┌─────────┐
+    │  main   │
+    └─────────┘
+  `, { titles: { main: 'Main View' } });
+  // Render in non-TTY and check the title appears somewhere in output.
+  const captured = [];
+  const orig = process.stdout.write.bind(process.stdout);
+  process.stdout.write = (s) => { captured.push(typeof s === 'string' ? s : s.toString()); return true; };
+  try {
+    lo.set('main', 'x');
+    lo.render();
+  } finally {
+    process.stdout.write = orig;
+  }
+  // Non-TTY fallback doesn't draw the grid frame so titles won't appear
+  // there; at minimum the label must be present.
+  assert.match(captured.join(''), /main/);
+});

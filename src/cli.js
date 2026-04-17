@@ -22,6 +22,7 @@ function printHelp(version) {
   writeln(`  ${c.chalk}lumi demo table${c.r}         just table`);
   writeln(`  ${c.chalk}lumi demo logger${c.r}        just logger`);
   writeln(`  ${c.chalk}lumi demo badges${c.r}        just badges`);
+  writeln(`  ${c.chalk}lumi demo layout${c.r}        sketch-driven dashboard (alt screen, ~6s)`);
   writeln(`  ${c.chalk}lumi demo --slow${c.r}        presentation mode`);
   writeln();
   writeln(`  ${c.chalk}lumi --help${c.r}             show this help`);

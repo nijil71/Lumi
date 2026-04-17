@@ -15,6 +15,7 @@ import {
   diff,
   StatusBar,
   confirm, select, input, multiSelect, autocomplete, TaskRunner, pager,
+  Layout,
 } from './src/index.js';
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -540,6 +541,85 @@ async function demoTasks() {
 
 // ─── Pager ──────────────────────────────────────────────────────────────────
 
+async function demoLayout() {
+  sectionDivider('LAYOUT');
+
+  writeln(`${c.slate}Building a live dashboard from this wireframe:${c.r}`);
+  writeln();
+  const wireframe = [
+    '  ╭──────────────────────────────────────────╮',
+    '  │                  header                  │',
+    '  ├────────────────┬─────────────────────────┤',
+    '  │    metrics     │         events          │',
+    '  │                │                         │',
+    '  ├────────────────┴─────────────────────────┤',
+    '  │                  footer                  │',
+    '  ╰──────────────────────────────────────────╯',
+  ];
+  for (const line of wireframe) writeln(`${c.graphite}${line}${c.r}`);
+  writeln();
+  writeln(`${c.slate}Layout.sketch reads the drawing — border style, cell spans, track sizes — and renders.${c.r}`);
+  writeln(`${c.slate}Opening in 1.2s · runs for ~6s · Ctrl+C to exit early${c.r}`);
+  await sleep(1200);
+
+  const lo = Layout.sketch`
+    ╭──────────────────────────────────────────────────────╮
+    │                        header                        │
+    ├────────────────────┬─────────────────────────────────┤
+    │                    │                                 │
+    │      metrics       │             events              │
+    │                    │                                 │
+    │                    │                                 │
+    │                    │                                 │
+    ├────────────────────┴─────────────────────────────────┤
+    │                        footer                        │
+    ╰──────────────────────────────────────────────────────╯
+  `;
+  lo.start();
+
+  const cpu = Array.from({ length: 24 }, () => Math.random() * 100);
+  const mem = Array.from({ length: 24 }, () => 40 + Math.random() * 40);
+  const req = Array.from({ length: 24 }, () => Math.random() * 200);
+  const events = [];
+  const sources = ['api', 'db ', 'svc', 'web', 'job'];
+  const verbs   = ['started', 'ok     ', 'retried', 'queued ', 'closed ', 'slow   '];
+
+  lo.set('header', () =>
+    gradient('  LUMI.sketch → live grid · only changed lines repaint', ...GRADIENTS.neon)
+  );
+  lo.set('footer', `${c.d}  tip: each frame diffs against the last — zero flicker${c.r}`);
+
+  const tick = setInterval(() => {
+    cpu.shift(); cpu.push(Math.random() * 100);
+    mem.shift(); mem.push(40 + Math.random() * 40);
+    req.shift(); req.push(Math.random() * 200);
+
+    const s = sources[Math.floor(Math.random() * sources.length)];
+    const v = verbs[Math.floor(Math.random() * verbs.length)];
+    const ms = (Math.random() * 80).toFixed(0).padStart(3, ' ');
+    events.push(
+      `${c.slate}${new Date().toTimeString().slice(0, 8)}${c.r}  ` +
+      `${c.azure}${s}${c.r}  ${v} ${c.d}${ms}ms${c.r}`
+    );
+    if (events.length > 200) events.shift();
+
+    lo.set('metrics', () => [
+      '',
+      `  ${c.chalk}CPU    ${c.r}${sparkline(cpu, { color: 'azure' })}  ${cpu.at(-1).toFixed(0)}%`,
+      `  ${c.chalk}MEM    ${c.r}${sparkline(mem, { color: 'sage'  })}  ${mem.at(-1).toFixed(0)}%`,
+      `  ${c.chalk}REQ/s  ${c.r}${sparkline(req, { color: 'amber' })}  ${req.at(-1).toFixed(0)}`,
+      '',
+      `  ${c.d}updated ${new Date().toLocaleTimeString()}${c.r}`,
+    ]);
+    lo.set('events', () => events.slice(-200));
+    lo.render();
+  }, 180);
+
+  await sleep(6000);
+  clearInterval(tick);
+  lo.stop();
+}
+
 async function demoPager() {
   sectionDivider('PAGER');
 
@@ -602,6 +682,7 @@ const SECTIONS = {
   prompts: demoPrompts,   // interactive — run with: node demo.js prompts
   advancedprompts: demoPromptAdvanced, // interactive
   tasks: demoTasks,
+  layout: demoLayout,     // takes over the screen (alt buffer)
   pager: demoPager,       // interactive
   closer: closer,
 };
@@ -620,8 +701,8 @@ async function demo() {
     // When running explicit sections, show() the cursor first if prompts section included
     for (const name of requested) await SECTIONS[name]();
   } else {
-    // Auto-run excludes interactive sections
-    const excludes = ['prompts', 'advancedprompts', 'pager'];
+    // Auto-run excludes interactive / alt-screen sections
+    const excludes = ['prompts', 'advancedprompts', 'pager', 'layout'];
     const autoSections = Object.entries(SECTIONS).filter(([k]) => !excludes.includes(k));
     for (const [, fn] of autoSections) await fn();
   }

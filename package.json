@@ -15,13 +15,14 @@
     "lumi": "./src/cli.js"
   },
   "files": [
+    "dist",
     "src",
     "README.md",
     "CHANGELOG.md",
     "demo.js"
   ],
   "scripts": {
-    "build": "esbuild src/index.js --bundle --format=esm --outfile=dist/index.js --platform=node",
+    "build": "esbuild src/index.js --bundle --format=esm --outfile=dist/index.js --platform=node --minify --legal-comments=none",
     "demo": "node src/cli.js demo",
     "smoke": "node --test test/smoke.test.js",
     "units": "node --test test/units.test.js",

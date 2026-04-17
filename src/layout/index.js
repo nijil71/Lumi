@@ -9,25 +9,37 @@
 // the viewport for its lifetime and never clobbers scrollback.
 
 import {
-  write, writeln, ansi, cols, rows, c as colors,
+  write, writeln, ansi, cols, rows,
   isTTY, visibleLen, truncate, padEnd, stripAnsi,
   registerCleanup, getColorTheme,
 } from '../ansi.js';
+
+import { parseSketch } from './sketch.js';
 
 const ESC = '\x1b[';
 const altScreenEnter = `${ESC}?1049h`;
 const altScreenExit  = `${ESC}?1049l`;
 const clearScreen    = `${ESC}2J`;
 
-// ─── Border styles (local copy — keeps module self-contained) ─────────────
+// ─── Border styles ────────────────────────────────────────────────────────
+//
+// Each style includes T-junction and cross glyphs needed by the shared-border
+// grid renderer (`gridBorder` mode). `tup`=┴, `tdown`=┬, `tleft`=┤,
+// `tright`=├, `cross`=┼.
 
 const BORDERS = {
-  single:  { tl: '┌', tr: '┐', bl: '└', br: '┘', h: '─', v: '│' },
-  double:  { tl: '╔', tr: '╗', bl: '╚', br: '╝', h: '═', v: '║' },
-  rounded: { tl: '╭', tr: '╮', bl: '╰', br: '╯', h: '─', v: '│' },
-  thick:   { tl: '┏', tr: '┓', bl: '┗', br: '┛', h: '━', v: '┃' },
-  dashed:  { tl: '┌', tr: '┐', bl: '└', br: '┘', h: '╌', v: '╎' },
-  ascii:   { tl: '+', tr: '+', bl: '+', br: '+', h: '-', v: '|' },
+  single:  { tl:'┌', tr:'┐', bl:'└', br:'┘', h:'─', v:'│',
+             tup:'┴', tdown:'┬', tleft:'┤', tright:'├', cross:'┼' },
+  double:  { tl:'╔', tr:'╗', bl:'╚', br:'╝', h:'═', v:'║',
+             tup:'╩', tdown:'╦', tleft:'╣', tright:'╠', cross:'╬' },
+  rounded: { tl:'╭', tr:'╮', bl:'╰', br:'╯', h:'─', v:'│',
+             tup:'┴', tdown:'┬', tleft:'┤', tright:'├', cross:'┼' },
+  thick:   { tl:'┏', tr:'┓', bl:'┗', br:'┛', h:'━', v:'┃',
+             tup:'┻', tdown:'┳', tleft:'┫', tright:'┣', cross:'╋' },
+  dashed:  { tl:'┌', tr:'┐', bl:'└', br:'┘', h:'╌', v:'╎',
+             tup:'┴', tdown:'┬', tleft:'┤', tright:'├', cross:'┼' },
+  ascii:   { tl:'+', tr:'+', bl:'+', br:'+', h:'-', v:'|',
+             tup:'+', tdown:'+', tleft:'+', tright:'+', cross:'+' },
 };
 
 // ─── Track spec parsing ───────────────────────────────────────────────────
@@ -171,6 +183,160 @@ function renderCellBlock(cell, content, w, h) {
   return [topLine, ...bodyLines, botLine];
 }
 
+// ─── Shared-border grid rendering (gridBorder mode) ───────────────────────
+//
+// Normal Layout gives each cell its own border. Grid mode draws a single
+// frame with shared borders between cells, picking the right T-junction /
+// cross char at every intersection based on which neighbours are present.
+// The big payoff: the rendered output can look exactly like an ASCII
+// wireframe — which is exactly what `Layout.sketch` exploits.
+
+function pickJunction(br, up, down, left, right) {
+  const n = (up ? 1 : 0) + (down ? 1 : 0) + (left ? 1 : 0) + (right ? 1 : 0);
+  if (n === 4) return br.cross;
+  if (n === 3) {
+    if (!up)    return br.tdown;
+    if (!down)  return br.tup;
+    if (!left)  return br.tright;
+    return br.tleft;
+  }
+  if (n === 2) {
+    if (up && down)    return br.v;
+    if (left && right) return br.h;
+    if (down && right) return br.tl;
+    if (down && left)  return br.tr;
+    if (up && right)   return br.bl;
+    return br.br;
+  }
+  if (n === 1) return (up || down) ? br.v : br.h;
+  return ' ';
+}
+
+/**
+ * Build a 2D array [r][c] → cell name (or null). Each cell paints its
+ * entire (row × col) span in the map; overlaps throw.
+ */
+function buildCellMap(cellSpecs, nRows, nCols) {
+  const map = Array.from({ length: nRows }, () => new Array(nCols).fill(null));
+  for (const [name, spec] of Object.entries(cellSpecs)) {
+    const r  = normalizeRange(spec.row, nRows, 'row');
+    const cr = normalizeRange(spec.col, nCols, 'col');
+    for (let rr = r.start; rr <= r.end; rr++) {
+      for (let cc = cr.start; cc <= cr.end; cc++) {
+        if (map[rr][cc]) {
+          throw new Error(`Layout: cells "${map[rr][cc]}" and "${name}" overlap at track (${rr},${cc})`);
+        }
+        map[rr][cc] = name;
+      }
+    }
+  }
+  return map;
+}
+
+/**
+ * Grid-mode interior geometry for a cell (no borders, just the content area).
+ * Accounts for the 1-char frame at every track boundary.
+ */
+function gridCellInterior(cell, rowSizes, colSizes) {
+  const r  = normalizeRange(cell.row, rowSizes.length, 'row');
+  const cr = normalizeRange(cell.col, colSizes.length, 'col');
+  let x = 1 + cr.start;
+  for (let i = 0; i < cr.start; i++) x += colSizes[i];
+  let w = (cr.end - cr.start);            // border chars absorbed by the span
+  for (let i = cr.start; i <= cr.end; i++) w += colSizes[i];
+  let y = 1 + r.start;
+  for (let i = 0; i < r.start; i++) y += rowSizes[i];
+  let h = (r.end - r.start);
+  for (let i = r.start; i <= r.end; i++) h += rowSizes[i];
+  return { x, y, w, h };
+}
+
+/**
+ * Draw the shared-border grid frame. Returns one string per visual row,
+ * width = sum(colSizes) + nCols + 1, height = sum(rowSizes) + nRows + 1.
+ *
+ * Algorithm:
+ *   1. Flood every edge position with h/v chars.
+ *   2. Erase interior segments where the cells on both sides are the same
+ *      cell (span absorbs the divider).
+ *   3. Resolve each intersection to the right corner/T/cross/straight char
+ *      based on which of its four neighbours survived step 2.
+ *   4. Overlay titles onto the top edge of each cell that declares one.
+ */
+function drawGridFrame(cellMap, cellSpecs, rowSizes, colSizes, borderStyle) {
+  const br    = BORDERS[borderStyle] || BORDERS.single;
+  const nRows = rowSizes.length;
+  const nCols = colSizes.length;
+  const totalW = colSizes.reduce((a, b) => a + b, 0) + nCols + 1;
+  const totalH = rowSizes.reduce((a, b) => a + b, 0) + nRows + 1;
+  if (totalW <= 0 || totalH <= 0) return [];
+
+  // Pre-compute border-line coordinates
+  const rowEdges = [0];
+  for (let i = 0; i < nRows; i++) rowEdges.push(rowEdges[i] + rowSizes[i] + 1);
+  const colEdges = [0];
+  for (let i = 0; i < nCols; i++) colEdges.push(colEdges[i] + colSizes[i] + 1);
+
+  // 1. Fill all edges
+  const canvas = Array.from({ length: totalH }, () => new Array(totalW).fill(' '));
+  for (let e = 0; e <= nRows; e++) {
+    const y = rowEdges[e];
+    for (let x = 0; x < totalW; x++) canvas[y][x] = br.h;
+  }
+  for (let e = 0; e <= nCols; e++) {
+    const x = colEdges[e];
+    for (let y = 0; y < totalH; y++) canvas[y][x] = br.v;
+  }
+
+  // 2. Erase interior segments that fall inside a spanning cell
+  for (let e = 1; e < nRows; e++) {
+    const y = rowEdges[e];
+    for (let c = 0; c < nCols; c++) {
+      if (cellMap[e - 1][c] !== null && cellMap[e - 1][c] === cellMap[e][c]) {
+        for (let x = colEdges[c] + 1; x < colEdges[c + 1]; x++) canvas[y][x] = ' ';
+      }
+    }
+  }
+  for (let e = 1; e < nCols; e++) {
+    const x = colEdges[e];
+    for (let r = 0; r < nRows; r++) {
+      if (cellMap[r][e - 1] !== null && cellMap[r][e - 1] === cellMap[r][e]) {
+        for (let y = rowEdges[r] + 1; y < rowEdges[r + 1]; y++) canvas[y][x] = ' ';
+      }
+    }
+  }
+
+  // 3. Fix up intersections
+  for (let f = 0; f <= nRows; f++) {
+    for (let e = 0; e <= nCols; e++) {
+      const y = rowEdges[f], x = colEdges[e];
+      const up    = y > 0          && canvas[y - 1][x] === br.v;
+      const down  = y < totalH - 1 && canvas[y + 1][x] === br.v;
+      const left  = x > 0          && canvas[y][x - 1] === br.h;
+      const right = x < totalW - 1 && canvas[y][x + 1] === br.h;
+      canvas[y][x] = pickJunction(br, up, down, left, right);
+    }
+  }
+
+  // 4. Titles on top edge of each cell
+  for (const [, spec] of Object.entries(cellSpecs)) {
+    if (!spec.title) continue;
+    const r  = normalizeRange(spec.row, nRows, 'row');
+    const cr = normalizeRange(spec.col, nCols, 'col');
+    const y  = rowEdges[r.start];
+    const xStart = colEdges[cr.start];
+    const xEnd   = colEdges[cr.end + 1];
+    const span   = xEnd - xStart - 1;   // usable horizontal chars between the two corners
+    const title  = ` ${spec.title} `;
+    const tw     = visibleLen(title);
+    if (tw + 2 > span) continue;        // fall back to plain border when too tight
+    const anchor = xStart + 2;          // one h char, then the title
+    for (let i = 0; i < tw; i++) canvas[y][anchor + i] = [...title][i] ?? ' ';
+  }
+
+  return canvas.map(row => row.join(''));
+}
+
 // ─── Layout ───────────────────────────────────────────────────────────────
 
 export class Layout {
@@ -178,9 +344,12 @@ export class Layout {
     this._rowSpecs  = options.rows ?? ['*'];
     this._colSpecs  = options.cols ?? ['*'];
     this._cellSpecs = options.cells ?? {};
+    this._gridBorder = options.gridBorder ?? null;   // 'single' | 'double' | ... enables shared-border mode
+    this._gridColor  = options.gridColor  ?? null;
     this._content   = {};
     this._lastFrame    = new Map();   // name → array of last rendered full lines
     this._lastGeometry = new Map();
+    this._lastFrameKey = null;        // grid mode: invalidates frame on resize
     this._started     = false;
     this._nonTTY      = !isTTY();
     this._unregister  = null;
@@ -204,6 +373,7 @@ export class Layout {
   /** Force the next render() to rewrite every line (bypass diff). */
   invalidate() {
     this._lastFrame.clear();
+    this._lastFrameKey = null;
     return this;
   }
 
@@ -251,6 +421,9 @@ export class Layout {
 
     const vpCols = cols();
     const vpRows = rows();
+
+    if (this._gridBorder) return this._renderGrid(vpCols, vpRows);
+
     const rowSizes = resolveTracks(this._rowSpecs, vpRows);
     const colSizes = resolveTracks(this._colSpecs, vpCols);
 
@@ -285,6 +458,64 @@ export class Layout {
     return this;
   }
 
+  /** Shared-border grid render path. Draws one frame + diffed cell interiors. */
+  _renderGrid(vpCols, vpRows) {
+    const nRows = this._rowSpecs.length;
+    const nCols = this._colSpecs.length;
+    const contentCols = Math.max(0, vpCols - (nCols + 1));
+    const contentRows = Math.max(0, vpRows - (nRows + 1));
+    const rowSizes = resolveTracks(this._rowSpecs, contentRows);
+    const colSizes = resolveTracks(this._colSpecs, contentCols);
+
+    const cellMap = buildCellMap(this._cellSpecs, nRows, nCols);
+    const frame   = drawGridFrame(cellMap, this._cellSpecs, rowSizes, colSizes, this._gridBorder);
+    const paint   = this._gridColor ? getColorTheme(this._gridColor) : null;
+    const framed  = paint ? frame.map(l => paint(l)) : frame;
+
+    let out = '';
+
+    // Redraw the frame when the viewport size changes (cheap heuristic —
+    // cellSpecs are immutable so any re-layout comes from a resize).
+    const key = `${vpCols}x${vpRows}`;
+    if (this._lastFrameKey !== key) {
+      for (let i = 0; i < framed.length; i++) {
+        out += ansi.pos(1 + i, 1) + framed[i];
+      }
+      this._lastFrameKey = key;
+      this._lastFrame.clear();
+      this._lastGeometry.clear();
+    }
+
+    // Render each cell's interior (no border — the grid owns it).
+    for (const [name, spec] of Object.entries(this._cellSpecs)) {
+      const interior = gridCellInterior(spec, rowSizes, colSizes);
+      if (interior.w <= 0 || interior.h <= 0) { this._lastFrame.delete(name); continue; }
+
+      const prevGeom = this._lastGeometry.get(name);
+      if (!prevGeom ||
+          prevGeom.x !== interior.x || prevGeom.y !== interior.y ||
+          prevGeom.w !== interior.w || prevGeom.h !== interior.h) {
+        this._lastFrame.delete(name);
+      }
+      this._lastGeometry.set(name, interior);
+
+      const interiorSpec = { ...spec, border: null, title: null };
+      const block = renderCellBlock(interiorSpec, this._content[name], interior.w, interior.h);
+      const prev  = this._lastFrame.get(name) || [];
+
+      for (let i = 0; i < block.length; i++) {
+        if (prev[i] !== block[i]) {
+          out += ansi.pos(1 + interior.y + i, 1 + interior.x) + block[i];
+        }
+      }
+      this._lastFrame.set(name, block);
+    }
+
+    out += ansi.pos(vpRows, 1);
+    write(out);
+    return this;
+  }
+
   /** Non-TTY: print each cell's content sequentially with a header. */
   _renderFallback() {
     const termW = Math.max(40, cols());
@@ -301,6 +532,63 @@ export class Layout {
   }
 }
 
+/**
+ * Build a Layout from an ASCII / Unicode wireframe.
+ *
+ * Supports two call forms:
+ *   Layout.sketch`... template ...`              (tagged template literal)
+ *   Layout.sketch('... template ...', options?)  (function form w/ options)
+ *
+ * The sketch's corner characters pick the border style (╭ rounded, ╔ double,
+ * + ascii …); proportional drawn widths become flex track weights; and
+ * cell names are read from either the interior text or the top-border text.
+ *
+ * Options:
+ *   gridColor — paint the grid frame with a palette color
+ *   titles    — { [cell]: string } — render a title on the top edge
+ *   cells     — per-cell overrides (color for interior content)
+ *   gridBorder — override the auto-detected border style
+ */
+Layout.sketch = function sketch(strings, ...values) {
+  // Detect call form: tagged template vs plain string
+  let raw;
+  let options;
+  if (Array.isArray(strings) && 'raw' in strings) {
+    raw = strings.raw.reduce(
+      (acc, s, i) => acc + s + (i < values.length ? String(values[i]) : ''),
+      ''
+    );
+    options = {};    // tagged-template form takes no options (kept terse on purpose)
+  } else if (typeof strings === 'string') {
+    raw = strings;
+    options = (values[0] && typeof values[0] === 'object') ? values[0] : {};
+  } else {
+    throw new TypeError('Layout.sketch: expected a template literal or string');
+  }
+
+  const parsed = parseSketch(raw);
+
+  // Merge: per-cell overrides (title, color) layer onto parsed cells.
+  const titles    = options.titles || {};
+  const overrides = options.cells || {};
+  const cells     = {};
+  for (const [name, spec] of Object.entries(parsed.cells)) {
+    cells[name] = {
+      ...spec,
+      title: titles[name] ?? spec.title,
+      ...(overrides[name] || {}),
+    };
+  }
+
+  return new Layout({
+    rows:       options.rows ?? parsed.rows,
+    cols:       options.cols ?? parsed.cols,
+    cells,
+    gridBorder: options.gridBorder ?? parsed.border,
+    gridColor:  options.gridColor,
+  });
+};
+
 /** Factory shorthand matching statusBar() / spinner() / progressBar(). */
 export function layout(options) {
   return new Layout(options);
@@ -308,4 +596,7 @@ export function layout(options) {
 
 // ─── Internal helpers re-exported for tests only ──────────────────────────
 
-export const __test = { parseTrack, resolveTracks, cellGeometry, renderCellBlock };
+export const __test = {
+  parseTrack, resolveTracks, cellGeometry, renderCellBlock,
+  buildCellMap, gridCellInterior, drawGridFrame, pickJunction,
+};
