@@ -345,7 +345,10 @@ export declare function sparkline(values: number[], options?: SparklineOptions):
 
 // ─── Tree ─────────────────────────────────────────────────────────────────
 
-export type TreeNode = null | string[] | Record<string, TreeNode>;
+export interface TreeData {
+  [key: string]: TreeNode;
+}
+export type TreeNode = null | string[] | TreeData;
 
 export interface TreeOptions {
   color?: ColorName;
@@ -357,7 +360,7 @@ export interface TreeOptions {
  * Render a nested object or array as a tree with box-drawing connectors.
  * @example tree({ 'src/': { 'index.js': null }, 'package.json': null });
  */
-export declare function tree(data: Record<string, TreeNode> | string[], options?: TreeOptions): void;
+export declare function tree(data: TreeData | string[], options?: TreeOptions): void;
 
 // ─── Diff ─────────────────────────────────────────────────────────────────
 
@@ -408,22 +411,28 @@ export type SelectChoice = string | { label: string; value: string };
 
 export interface SelectOptions {
   default?: string;
+}
+
 /** Arrow-key selection from a list. Returns `Promise<string>`. */
 export declare function select(
   message: string,
-  choices: Array<string | { label: string; value: string }>,
-  options?: { default?: string }
+  choices: SelectChoice[],
+  options?: SelectOptions
 ): Promise<string>;
+
+export interface MultiSelectOptions {
+  default?: string[];
+}
 
 export declare function multiSelect(
   message: string,
-  choices: Array<string | { label: string; value: string }>,
-  options?: { default?: string[] }
+  choices: SelectChoice[],
+  options?: MultiSelectOptions
 ): Promise<string[]>;
 
 export declare function autocomplete(
   message: string,
-  choices: Array<string | { label: string; value: string }>
+  choices: SelectChoice[]
 ): Promise<string>;
 
 export interface InputOptions {
