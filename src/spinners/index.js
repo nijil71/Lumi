@@ -17,17 +17,17 @@ export const SPINNERS = {
   slash:    { interval: 80,  frames: ['╱','╲','╱','╲'] },
   grow:     { interval: 90,  frames: ['▏','▍','▋','█','▋','▍'] },
   ripple:   { interval: 100, frames: ['·','∘','○','◯','○','∘'] },
-  // Runner with a breath pause at each end, not a duplicated frame
-  runner:   { interval: 120, frames: ['ᗧ···','·ᗧ··','··ᗧ·','···ᗧ','··ᗧ·','·ᗧ··'] },
+  // Runner
+  runner:   { interval: 120, frames: ['ᗧ···','·ᗧ··','··ᗧ·','···ᗧ'] },
   // Heartbeat: lub-dub rhythm (quick double beat then rest)
-  heartbeat:{ interval: 120, frames: ['♡','♥','♡','♥','♡',' ',' '] },
+  heartbeat:{ interval: 120, frames: ['♡', '♥', '♡', ' ', '♡', '♥', '♡', ' ', ' '] },
 
 
   // ── action pets (single line, highly dynamic) ─────────────────────────
 
   catChase:    { interval: 100, frames: ['(=^･ω･^=)       🐁',' (=^･ω･^=)      🐁','  (=^･ω･^=)     🐁','   (=^･ω･^=)    🐁','    (=^･ω･^=)   🐁','     (=^･ω･^=)  🐁','      (=^･ω･^=) 🐁','       (=^>ω<^=)🐁','       (=^>ω<^=)','      (=^-ω-^=) ','    (=^-ω-^=)   ','  (=^-ω-^=)     '] },
   dogFetch:    { interval: 150, frames: ['( ᐡ • ﻌ • ᐡ )   🎾','( ᐡ > ﻌ < ᐡ )  🎾 ','( ᐡ • ﻌ • ᐡ ) 🎾  ','( ᐡ > ﻌ < ᐡ )🎾   ','( ᐡ ^ ﻌ ^ ᐡ )     ','( ᐡ > ﻌ < ᐡ )🎾   ','( ᐡ • ﻌ • ᐡ ) 🎾  ','( ᐡ > ﻌ < ᐡ )  🎾 '] },
-  bunnyEat:    { interval: 180, frames: ['₍ᐢ•ﻌ•ᐢ₎ 🥕','₍ᐢ>ﻌ<ᐢ₎ 🥕','₍ᐢ-ﻌ-ᐢ₎ 🥕','₍ᐢ^ﻌ^ᐢ₎ 🥕','₍ᐢ>ﻌ<ᐢ₎   '] },
+  bunnyEat:    { interval: 180, frames: ['₍ᐢ•ﻌ•ᐢ₎ 🥕','₍ᐢ>ﻌ<ᐢ₎ 🥕','₍ᐢ-ﻌ-ᐢ₎ 🥕','₍ᐢ^ﻌ^ᐢ₎ 🥕'] },
   fishSwim:    { interval: 150, frames: ['     ϵ( \'Θ\' )϶  ','   °  ϵ( °Θ° )϶ ',' ∘  ° ϵ( \'Θ\' )϶ ','   ∘  ϵ( °Θ° )϶ ','     ϵ( >Θ< )϶  ','     ϵ( \'Θ\' )϶  '] },
   bearHoney:   { interval: 200, frames: ['ʕ •ᴥ• ʔ  🍯','ʕ >ᴥ< ʔ  🍯','ʕ ^ᴥ^ ʔ 🍯 ','ʕ -ᴥ- ʔ🍯  ','ʕ >ᴥ< ʔ    '] },
   caterpillar: { interval: 80,  frames: ['🐛        ',' 🐛       ','  🐛      ','   🐛     ','    🐛    ','     🐛   ','      🐛  ','       🐛 ','        🐛'] },

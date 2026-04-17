@@ -311,7 +311,7 @@ export const GRADIENTS = {
   fire:    [[255, 71,  87],  [255, 185, 40 ]],  // red → amber
   ice:     [[60,  160, 255], [155, 235, 255]],  // blue → sky
   sunset:  [[255, 71,  87],  [180, 100, 255]],  // red → lavender
-  matrix:  [[0,   100, 40 ], [0,   210, 90 ]],  // deep green → bright green
+  matrix:  [[0,   210, 90 ], [0,   100, 40 ]],  // bright green → deep green
   gold:    [[255, 200, 0  ], [255, 130, 40 ]],  // gold → orange
   dawn:    [[255, 120, 180], [255, 185, 40 ]],  // pink → amber
   ocean:   [[0,   180, 255], [0,   120, 180]],  // sky → deep blue
