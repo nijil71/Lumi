@@ -373,7 +373,14 @@ export async function multiSelect(message, choices, options = {}) {
       write(ansi.up(linesDrawn) + ansi.clearDown());
     }
 
-    write(`${colors.azure}?${colors.r} ${colors.chalk}${colors.b}${message}${colors.r} ${colors.slate}(Space to toggle, Enter to confirm)${colors.r}\n`);
+    const counter = selectedValues.size
+      ? `${colors.sage}${selectedValues.size} selected${colors.r}`
+      : `${colors.slate}0 selected${colors.r}`;
+    write(
+      `${colors.azure}?${colors.r} ${colors.chalk}${colors.b}${message}${colors.r} ` +
+      `${colors.slate}(Space to toggle · Enter to confirm)${colors.r}  ` +
+      `${colors.slate}[${counter}${colors.slate}]${colors.r}\n`
+    );
 
     const MAX_ROWS = 10;
     const startIndex = Math.max(0, Math.min(cursor - Math.floor(MAX_ROWS / 2), items.length - MAX_ROWS));
@@ -495,7 +502,7 @@ export async function autocomplete(message, choices) {
     }
 
     if (filtered.length === 0) {
-      write(`  ${colors.signal}  No matches found.${colors.r}\n`);
+      write(`  ${colors.slate}  no matches · keep typing or ${colors.d}Esc${colors.r}${colors.slate} to cancel${colors.r}\n`);
       linesDrawn = 2; // message + 1 for 'no matches'
     } else {
       linesDrawn = slice.length + 1;
@@ -524,6 +531,13 @@ export async function autocomplete(message, choices) {
 
       let needsRender = false;
 
+      if (key === '\x1b') {   // bare Esc — cancel
+        process.stdin.removeListener('data', listener);
+        closeRaw();
+        unregister();
+        resolve(null);
+        return;
+      }
       if (key === UP) {
         cursor = filtered.length ? (cursor - 1 + filtered.length) % filtered.length : 0;
         needsRender = true;
@@ -564,12 +578,19 @@ export async function autocomplete(message, choices) {
   });
 
   write(ansi.up(linesDrawn) + ansi.clearDown());
-  const selectedItem = allItems.find(i => i.value === selected);
-  const selectedLabel = selectedItem ? selectedItem.label : String(selected);
-  writeln(
-    `${colors.sage}✔${colors.r} ${colors.chalk}${colors.b}${message}${colors.r}  ` +
-    `${colors.azure}${selectedLabel}${colors.r}`
-  );
+  if (selected === null) {
+    writeln(
+      `${colors.slate}✗${colors.r} ${colors.chalk}${colors.b}${message}${colors.r}  ` +
+      `${colors.slate}cancelled${colors.r}`
+    );
+  } else {
+    const selectedItem  = allItems.find(i => i.value === selected);
+    const selectedLabel = selectedItem ? selectedItem.label : String(selected);
+    writeln(
+      `${colors.sage}✔${colors.r} ${colors.chalk}${colors.b}${message}${colors.r}  ` +
+      `${colors.azure}${selectedLabel}${colors.r}`
+    );
+  }
   write(ansi.show());
 
   return selected;

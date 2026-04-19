@@ -1,6 +1,6 @@
 // ─── lumi-cli / spinners ────────────────────────────────────────────────
 
-import { write, writeln, ansi, c as colors, isTTY, getColorTheme, registerCleanup } from '../ansi.js';
+import { write, writeln, ansi, c as colors, cols, visibleLen, isTTY, getColorTheme, registerCleanup } from '../ansi.js';
 
 export const SPINNERS = {
   // ── core classics (earn their place) ──────────────────────────────────
@@ -156,7 +156,7 @@ export class Spinner {
 
     let elapsed = '';
     if (this._elapsed && this._startMs) {
-      elapsed = ` ${colors.slate}${formatElapsed(Date.now() - this._startMs)}${colors.r}`;
+      elapsed = `${colors.slate}${formatElapsed(Date.now() - this._startMs)}${colors.r}`;
     }
 
     if (isTTY()) {
@@ -165,13 +165,27 @@ export class Spinner {
         write(ansi.clearDown());
       }
       write(ansi.clearLine());
-      write(`${symbol} ${colors.chalk}${text}${colors.r}${elapsed}\n`);
+
+      // Right-align the elapsed tail so stacked success lines line up their
+      // timings into a column, df-style. Pick an alignment anchor that's
+      // comfortable on 80-col terminals but grows with wider windows up to 60.
+      const prefix = `${symbol} ${colors.chalk}${text}${colors.r}`;
+      if (elapsed) {
+        const pVis = visibleLen(prefix);
+        const eVis = visibleLen(elapsed);
+        const anchor = Math.min(cols() - 2, 60);
+        const pad = Math.max(1, anchor - pVis - eVis);
+        write(`${prefix}${' '.repeat(pad)}${elapsed}\n`);
+      } else {
+        write(`${prefix}\n`);
+      }
       write(ansi.show());
     } else {
       // Non-TTY: write a plain settled line so piped logs capture the outcome.
       // Strip ANSI from symbol to keep log files clean.
       const plainSymbol = symbol.replace(/\x1b\[[0-9;]*m/g, '');
-      writeln(`${plainSymbol} ${text}${elapsed ? ` ${elapsed.replace(/\x1b\[[0-9;]*m/g, '')}` : ''}`);
+      const plainElapsed = elapsed.replace(/\x1b\[[0-9;]*m/g, '');
+      writeln(`${plainSymbol} ${text}${plainElapsed ? `  ${plainElapsed}` : ''}`);
     }
   }
 

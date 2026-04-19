@@ -17,24 +17,44 @@ import { write, ansi, c as colors, cols, rows, visibleLen, truncate, isTTY, regi
  */
 export class StatusBar {
   constructor(options = {}) {
-    this._left   = options.left   ?? '';
-    this._center = options.center ?? '';
-    this._right  = options.right  ?? '';
-    this._bg     = colors.bgGraphite;
-    this._fg     = colors.chalk;
+    this._left     = options.left   ?? '';
+    this._center   = options.center ?? '';
+    this._right    = options.right  ?? '';
+    this._segments = options.segments ?? null;
+    this._sep      = options.separator ?? `${colors.slate} │ ${colors.r}`;
+    this._bg       = colors.bgGraphite;
+    this._fg       = colors.chalk;
     this._unregister = null;
     this._rendered = false;
   }
 
   /**
    * Update one or more sections and re-render immediately.
-   * @param {{ left?: string, center?: string, right?: string }} parts
+   * @param {{ left?: string, center?: string, right?: string,
+   *           segments?: StatusBarSegment[], separator?: string }} parts
    */
   update(parts = {}) {
-    if (parts.left   !== undefined) this._left   = parts.left;
-    if (parts.center !== undefined) this._center = parts.center;
-    if (parts.right  !== undefined) this._right  = parts.right;
+    if (parts.left      !== undefined) this._left     = parts.left;
+    if (parts.center    !== undefined) this._center   = parts.center;
+    if (parts.right     !== undefined) this._right    = parts.right;
+    if (parts.segments  !== undefined) this._segments = parts.segments;
+    if (parts.separator !== undefined) this._sep      = parts.separator;
     return this.render();
+  }
+
+  /**
+   * Compose segments into a styled string. Each segment:
+   *   `{ icon?: string, text: string, color?: ColorName }`
+   * Joined by `this._sep` (default dim ` │ `).
+   */
+  _composeSegments() {
+    if (!this._segments || this._segments.length === 0) return '';
+    const parts = this._segments.map((seg) => {
+      const prefix = seg.icon ? `${seg.icon} ` : '';
+      const paint  = seg.color ? (s) => `${colors[seg.color] ?? ''}${s}${colors.r}` : (s) => s;
+      return paint(`${prefix}${seg.text}`);
+    });
+    return parts.join(this._sep);
   }
 
   /** Paint the status line at the bottom of the terminal. */
@@ -50,7 +70,10 @@ export class StatusBar {
 
     const w          = cols();
     const row        = rows();
-    const leftVis    = visibleLen(this._left);
+    // Segments, when present, occupy the left slot and override any plain
+    // `left:` string passed in. center/right still work independently.
+    const effLeft    = this._segments ? this._composeSegments() : this._left;
+    const leftVis    = visibleLen(effLeft);
     const centerVis  = visibleLen(this._center);
     const rightVis   = visibleLen(this._right);
 
@@ -59,10 +82,10 @@ export class StatusBar {
       const sideSpace = Math.floor((w - centerVis) / 2);
       const leftPad   = Math.max(0, sideSpace - leftVis);
       const rightPad  = Math.max(0, w - leftVis - leftPad - centerVis - rightVis);
-      line = this._left + ' '.repeat(leftPad) + this._center + ' '.repeat(rightPad) + this._right;
+      line = effLeft + ' '.repeat(leftPad) + this._center + ' '.repeat(rightPad) + this._right;
     } else {
       const gap = Math.max(0, w - leftVis - rightVis);
-      line = this._left + ' '.repeat(gap) + this._right;
+      line = effLeft + ' '.repeat(gap) + this._right;
     }
 
     // Truncate to terminal width honouring ANSI + wide chars

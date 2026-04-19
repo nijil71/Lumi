@@ -2,6 +2,22 @@
 
 import { write, writeln, ansi, c as colors, cols, visibleLen, isTTY, getColorTheme, registerCleanup } from '../ansi.js';
 
+/**
+ * Middle-ellipsis truncation — keeps both ends of a label visible.
+ *   `node_modules/foo/bar/baz.tar.gz` → `node_modul…tar.gz`
+ * Assumes a plain string (no embedded ANSI); progress labels are almost
+ * always plain paths or step names, which is where this is most useful.
+ */
+function truncateMiddle(str, width) {
+  const s = String(str);
+  if (visibleLen(s) <= width) return s;
+  if (width <= 1) return '…';
+  const keep  = width - 1;
+  const left  = Math.ceil(keep / 2);
+  const right = keep - left;
+  return s.slice(0, left) + '…' + (right > 0 ? s.slice(s.length - right) : '');
+}
+
 // ─── Progress bar styles ──────────────────────────────────────────────────
 
 const STYLES = {
@@ -50,9 +66,16 @@ export class ProgressBar {
     this._printedMilestones = new Set();
   }
 
+  _displayLabel() {
+    // Cap labels at 24 visible columns and middle-ellipsis longer ones so a
+    // path like `node_modules/foo/bar/baz.tar.gz` collapses to
+    // `node_modul…tar.gz` instead of eating half the terminal.
+    return this._label ? truncateMiddle(this._label, 24) : '';
+  }
+
   _barWidth() {
     const terminal = this._width || cols();
-    const labelLen = this._label ? visibleLen(this._label) + 1 : 0;
+    const labelLen = this._label ? visibleLen(this._displayLabel()) + 1 : 0;
     const pctLen   = 7;
     const numLen   = String(this._total).length * 2 + 3;
     const caps     = visibleLen(this._style.caps[0]) + visibleLen(this._style.caps[1]);
@@ -112,7 +135,7 @@ export class ProgressBar {
     const numStr     = this._indeterminate
       ? `${colors.slate}${this._current}${colors.r}`
       : `${colors.slate}${String(this._current).padStart(String(this._total).length)}/${this._total}${colors.r}`;
-    const label      = this._label ? `${colors.mist}${this._label}${colors.r} ` : '';
+    const label      = this._label ? `${colors.mist}${this._displayLabel()}${colors.r} ` : '';
 
     let suffix = '';
     if (this._showEta && !this._indeterminate && pct < 1) {

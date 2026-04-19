@@ -643,8 +643,11 @@ async function demoTasks() {
 async function demoLayout() {
   sectionDivider('LAYOUT');
 
-  writeln(`${c.slate}Building a live dashboard from this wireframe:${c.r}`);
+  writeln(`${c.slate}Layout.sketch reads a wireframe and makes it live.${c.r}`);
   writeln();
+
+  // ─── Phase 1 · print the wireframe as plain source-looking text.
+  // The shape the *developer writes* — before anything parses it.
   const wireframe = [
     '  ╭──────────────────────────────────────────╮',
     '  │                  header                  │',
@@ -657,10 +660,25 @@ async function demoLayout() {
   ];
   for (const line of wireframe) writeln(`${c.graphite}${line}${c.r}`);
   writeln();
-  writeln(`${c.slate}Layout.sketch reads the drawing — border style, cell spans, track sizes — and renders.${c.r}`);
-  writeln(`${c.slate}Opening in 1.2s · runs for ~6s · Ctrl+C to exit early${c.r}`);
-  await sleep(1200);
+  writeln(`${c.d}  ↑ gray text above is what you'd type · watch it parse…${c.r}`);
+  await sleep(1500);
 
+  // ─── Phase 2 · walk back up the wireframe and repaint each row lavender.
+  // Uses relative cursor motion — no absolute addressing, so it works no
+  // matter where the cursor currently sits in the scrollback.
+  const LINES_BELOW = 2;   // the blank line + the hint we just printed
+  write(ansi.up(wireframe.length + LINES_BELOW));
+  for (const line of wireframe) {
+    write(ansi.clearLine() + `${c.lavender}${line}${c.r}\n`);
+    await sleep(50);       // 50ms × 8 rows ≈ 400ms total
+  }
+  // skip past the (now stale) hint line we wrote below the wireframe
+  write(ansi.down(LINES_BELOW));
+  writeln();
+  writeln(`${c.d}  ✓ parsed · border style = rounded · 2 rows × 2 cols · spans detected${c.r}`);
+  await sleep(500);
+
+  // ─── Phase 3 · enter the Layout's alt-screen and reveal cells top-down.
   const lo = Layout.sketch`
     ╭──────────────────────────────────────────────────────╮
     │                        header                        │
@@ -675,18 +693,32 @@ async function demoLayout() {
     ╰──────────────────────────────────────────────────────╯
   `;
   lo.start();
+  lo.render();             // empty frame first — just the border
+  await sleep(350);
 
+  lo.set('header', gradient('  LUMI.sketch → live grid · only changed lines repaint', ...GRADIENTS.neon));
+  lo.render();
+  await sleep(250);
+
+  lo.set('metrics', `  ${c.d}  loading metrics…${c.r}`);
+  lo.render();
+  await sleep(250);
+
+  lo.set('events', `  ${c.d}  waiting for events…${c.r}`);
+  lo.render();
+  await sleep(250);
+
+  lo.set('footer', `${c.d}  tip: each frame diffs against the last — zero flicker${c.r}`);
+  lo.render();
+  await sleep(450);
+
+  // ─── Phase 4 · go live.
   const cpu = Array.from({ length: 24 }, () => Math.random() * 100);
   const mem = Array.from({ length: 24 }, () => 40 + Math.random() * 40);
   const req = Array.from({ length: 24 }, () => Math.random() * 200);
   const events = [];
   const sources = ['api', 'db ', 'svc', 'web', 'job'];
   const verbs   = ['started', 'ok     ', 'retried', 'queued ', 'closed ', 'slow   '];
-
-  lo.set('header', () =>
-    gradient('  LUMI.sketch → live grid · only changed lines repaint', ...GRADIENTS.neon)
-  );
-  lo.set('footer', `${c.d}  tip: each frame diffs against the last — zero flicker${c.r}`);
 
   const tick = setInterval(() => {
     cpu.shift(); cpu.push(Math.random() * 100);
