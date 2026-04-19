@@ -78,7 +78,11 @@ function formatElapsed(ms) {
 
 export class Spinner {
   constructor(options = {}) {
-    this._def     = SPINNERS[options.type || 'braille'] || SPINNERS.braille;
+    const typeName = options.type || 'braille';
+    if (!SPINNERS[typeName]) {
+      throw new RangeError(`Spinner: unknown type "${typeName}" — expected one of ${Object.keys(SPINNERS).join(' | ')}`);
+    }
+    this._def     = SPINNERS[typeName];
     this._text    = options.text   || '';
     this._colorFn = getColorTheme(options.color || 'default');
     this._frame   = 0;
@@ -228,6 +232,11 @@ export class Spinner {
   }
 }
 
+/** Factory shorthand for MultiSpinner — matches `spinner()` style. */
+export function multiSpinner() {
+  return new MultiSpinner();
+}
+
 export function spinner(textOrOptions) {
   if (typeof textOrOptions === 'string') return new Spinner({ text: textOrOptions });
   return new Spinner(textOrOptions);
@@ -246,7 +255,13 @@ export class MultiSpinner {
   add(textOrOptions) {
     const opts = typeof textOrOptions === 'string' ? { text: textOrOptions } : textOrOptions;
     this._spinners.push({
-      def:     SPINNERS[opts.type || 'braille'] || SPINNERS.braille,
+      def:     (() => {
+        const t = opts.type || 'braille';
+        if (!SPINNERS[t]) {
+          throw new RangeError(`MultiSpinner.add: unknown type "${t}" — expected one of ${Object.keys(SPINNERS).join(' | ')}`);
+        }
+        return SPINNERS[t];
+      })(),
       text:    opts.text || '',
       frame:   0,
       colorFn: getColorTheme(opts.color || 'default'),

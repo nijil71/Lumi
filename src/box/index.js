@@ -134,7 +134,14 @@ function wrapLine(line, innerWidth) {
 // ─── Box ──────────────────────────────────────────────────────────────────
 
 export function box(content, options = {}) {
-  const border     = BORDERS[options.border || 'single'];
+  if (content == null) {
+    throw new TypeError('box: content is required (string, string[], or non-null value) — got ' + content);
+  }
+  const borderName = options.border || 'single';
+  const border     = BORDERS[borderName];
+  if (!border) {
+    throw new RangeError(`box: unknown border "${borderName}" — expected one of ${Object.keys(BORDERS).join(' | ')}`);
+  }
   const colorFn    = getColorTheme(options.color || 'default');
   const title      = options.title  || null;
   const footer     = options.footer || null;

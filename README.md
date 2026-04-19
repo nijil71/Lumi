@@ -78,6 +78,20 @@ node examples/quickstart.js
 
 ---
 
+## API shapes (quick rule)
+
+Three flavors — pick by what the thing *is*:
+
+| Shape | When | Example |
+|---|---|---|
+| **class** `new X()` | stateful — you'll update it over time | `new Spinner({...})`, `new ProgressBar({...})`, `new Layout({...})` |
+| **factory** `x()` | same as the class, but you dislike `new` | `spinner(...)`, `progressBar(...)`, `layout(...)`, `multiSpinner()`, `multiBar()` |
+| **function** `x(...)` | one-shot render — returns a string or prints and returns | `box(...)`, `table(...)`, `banner(...)`, `tree(...)`, `diff(...)`, `sparkline(...)` |
+
+If it holds state (a running spinner, a progress bar you call `.update()` on, a live layout), it's a class. If it's "compute this output, done," it's a function.
+
+---
+
 ## What's inside
 
 ```
@@ -602,6 +616,24 @@ const lo = new Layout({
 **Resize-aware** — `SIGWINCH` triggers a full repaint with re-resolved track sizes.
 
 **Non-TTY fallback** — each cell prints sequentially with a header label, so piped output stays readable.
+
+### Lifecycle — the one thing to know
+
+Between `start()` and `stop()`, Layout **owns the terminal**. It enters the alt-screen buffer (same as `pager`), hides the cursor, and installs a `SIGWINCH` handler. Everything it renders goes onto that alt-screen, not your scrollback — so the moment you call `stop()` the screen jumps back to exactly what it looked like before, as if Layout never ran.
+
+```js
+lo.start();      // enter alt-screen · hide cursor · bind resize
+lo.set('…', …);  // set content (as many times as you want)
+lo.render();     // paint — call whenever content changes
+…
+lo.stop();       // exit alt-screen · show cursor · clean up
+```
+
+Rules:
+- Don't call `render()` without `start()` first (auto-starts, but you lose control of when the alt-screen enters).
+- **Ctrl+C is handled** — Lumi restores your terminal before exiting with code 130. You don't need your own `SIGINT` handler for cleanup.
+- For clean exits, you still need `stop()` — otherwise the alt-screen is only released by process termination.
+- `pager` and `Layout` both grab the alt-screen; don't nest them.
 
 ---
 

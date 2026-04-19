@@ -183,6 +183,9 @@ export declare class MultiSpinner {
   stop(): void;
 }
 
+/** Factory shorthand matching `spinner()` style. */
+export declare function multiSpinner(): MultiSpinner;
+
 // ─── Progress ─────────────────────────────────────────────────────────────
 
 export type ProgressStyle = 'block' | 'shaded' | 'bracket' | 'thin' | 'brutalist' | 'dots';
@@ -219,6 +222,9 @@ export declare class MultiBar {
   tick(): this;
   stop(): void;
 }
+
+/** Factory shorthand matching `progressBar()` style. */
+export declare function multiBar(): MultiBar;
 
 // ─── Banner ───────────────────────────────────────────────────────────────
 

@@ -45,11 +45,18 @@ const STYLES = {
 
 export class ProgressBar {
   constructor(options = {}) {
-    // total=0 means indeterminate; keep the user value so we can distinguish.
+    // total=0 means indeterminate; negative is a typo and deserves a loud error.
+    if (options.total !== undefined && (typeof options.total !== 'number' || options.total < 0 || !Number.isFinite(options.total))) {
+      throw new RangeError(`ProgressBar: total must be >= 0 (0 = indeterminate) — got ${options.total}`);
+    }
+    const styleName = options.style || 'block';
+    if (!STYLES[styleName]) {
+      throw new RangeError(`ProgressBar: unknown style "${styleName}" — expected one of ${Object.keys(STYLES).join(' | ')}`);
+    }
     this._indeterminate = options.total === 0;
     this._total   = this._indeterminate ? 1 : Math.max(1, options.total ?? 100);
     this._current = Math.max(0, options.current ?? 0);
-    this._style   = STYLES[options.style || 'block'];
+    this._style   = STYLES[styleName];
     this._width   = options.width   || null;
     this._label   = options.label   || '';
     this._color   = options.color   || 'azure';
@@ -329,6 +336,11 @@ export class MultiBar {
 }
 
 // ─── Convenience factory ──────────────────────────────────────────────────
+
+/** Factory shorthand for MultiBar — matches `progressBar()` style. */
+export function multiBar() {
+  return new MultiBar();
+}
 
 export function progressBar(options) {
   return new ProgressBar(options);
