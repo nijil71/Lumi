@@ -3,11 +3,14 @@
   "version": "1.0.9",
   "description": "Terminal UI components — spinners, progress bars, boxes, tables, banners — zero dependencies",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./src/types.d.ts",
   "exports": {
     ".": {
-      "types": "./src/types.d.ts",
+      "types":   "./src/types.d.ts",
+      "import":  "./dist/index.js",
+      "require": "./dist/index.cjs",
       "default": "./dist/index.js"
     }
   },
@@ -22,8 +25,11 @@
     "demo.js"
   ],
   "scripts": {
-    "build": "esbuild src/index.js --bundle --format=esm --outfile=dist/index.js --platform=node --minify --legal-comments=none",
-    "demo": "node src/cli.js demo",
+    "build":     "npm run build:esm && npm run build:cjs",
+    "build:esm": "esbuild src/index.js --bundle --format=esm --outfile=dist/index.js  --platform=node --minify --legal-comments=none",
+    "build:cjs": "esbuild src/index.js --bundle --format=cjs --outfile=dist/index.cjs --platform=node --minify --legal-comments=none",
+    "demo":       "node src/cli.js demo",
+    "quickstart": "node examples/quickstart.js",
     "smoke": "node --test test/smoke.test.js",
     "units": "node --test test/units.test.js",
     "test": "node --test test/*.test.js",
