@@ -1,6 +1,6 @@
 // ─── lumi-cli / logger ──────────────────────────────────────────────────
 
-import { writeln, write, c as colors } from '../ansi.js';
+import { writeln, write, visibleLen, c as colors } from '../ansi.js';
 
 const LEVELS = {
   info:    { symbol: 'ℹ', color: colors.azure,    label: 'info ' },
@@ -49,11 +49,20 @@ class Logger {
     return this;
   }
 
-  // Key-value pair
+  // Key-value pair. Uses a dot leader (` · · · · `) instead of plain spaces
+  // when the gap between key and value is wide enough to be visually
+  // confusing — unix `df`-style — so your eye tracks the row cleanly.
   kv(key, value, options = {}) {
-    const kw     = options.keyWidth || 20;
-    const padded = key.padEnd(kw, ' ');
-    writeln(`  ${colors.slate}${padded}${colors.r}${colors.chalk}${value}${colors.r}`);
+    const kw  = options.keyWidth || 20;
+    const kv  = visibleLen(key);
+    const gap = Math.max(1, kw - kv);
+    // Threshold tuned so short keys ("PORT") skip the leader but longer
+    // left-pads ("NODE_ENV              3000") gain one.
+    const filler = gap >= 6
+      ? ' ' + `${colors.d}${'· '.repeat(Math.floor((gap - 2) / 2))}${colors.r}` +
+        ' '.repeat((gap - 2) - Math.floor((gap - 2) / 2) * 2) + ' '
+      : ' '.repeat(gap);
+    writeln(`  ${colors.slate}${key}${colors.r}${filler}${colors.chalk}${value}${colors.r}`);
     return this;
   }
 

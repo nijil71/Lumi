@@ -33,11 +33,62 @@ Runs without installing. Shows every component live in your terminal.
 npm install @nijil71/lumi-cli
 ```
 
-> **Node.js ≥ 18** · Pure ESM · No CommonJS · No polyfills · No setup
+> **Node.js ≥ 18** · ESM + CommonJS · No polyfills · No setup
 
 ```js
-import { spinner, ProgressBar, box, table, banner, log, gradient } from '@nijil71/lumi-cli';
+// ESM
+import { Spinner, ProgressBar, box, table, banner, log } from '@nijil71/lumi-cli';
+
+// CommonJS
+const { Spinner, ProgressBar, box, table, banner, log } = require('@nijil71/lumi-cli');
 ```
+
+---
+
+## Quick start
+
+A 60-second tour — a fake "deploy" script showing six components compose cleanly in one flow. [See the source →](examples/quickstart.js)
+
+```js
+import { banner, box, table, Spinner, ProgressBar, log, c, gradient, GRADIENTS } from '@nijil71/lumi-cli';
+
+banner('DEPLOY', { gradient: GRADIENTS.neon, align: 'center' });
+
+log.step(1, 3, 'Running tests');
+await Spinner.promise(runTests(), { text: 'running 42 tests', successText: '42 passed', elapsed: true });
+
+log.step(2, 3, 'Building bundle');
+const bar = new ProgressBar({ total: 100, style: 'block', label: 'bundle.tar.gz', eta: true });
+bar.start();
+for (let i = 0; i <= 100; i++) { bar.update(i); await wait(15); }
+bar.complete('built');
+
+log.step(3, 3, 'Uploading');
+await Spinner.promise(upload(), { text: 'uploading', successText: 'live', elapsed: true });
+
+box([`${c.sage}✓${c.r}  deployed to ${c.azure}production${c.r}`],
+    { border: 'rounded', color: 'lavender', title: 'COMPLETE', padding: 1 });
+```
+
+Clone and run it live:
+```bash
+git clone https://github.com/nijil71/Lumi && cd Lumi
+node examples/quickstart.js
+```
+
+---
+
+## API shapes (quick rule)
+
+Three flavors — pick by what the thing *is*:
+
+| Shape | When | Example |
+|---|---|---|
+| **class** `new X()` | stateful — you'll update it over time | `new Spinner({...})`, `new ProgressBar({...})`, `new Layout({...})` |
+| **factory** `x()` | same as the class, but you dislike `new` | `spinner(...)`, `progressBar(...)`, `layout(...)`, `multiSpinner()`, `multiBar()` |
+| **function** `x(...)` | one-shot render — returns a string or prints and returns | `box(...)`, `table(...)`, `banner(...)`, `tree(...)`, `diff(...)`, `sparkline(...)` |
+
+If it holds state (a running spinner, a progress bar you call `.update()` on, a live layout), it's a class. If it's "compute this output, done," it's a function.
 
 ---
 
@@ -565,6 +616,24 @@ const lo = new Layout({
 **Resize-aware** — `SIGWINCH` triggers a full repaint with re-resolved track sizes.
 
 **Non-TTY fallback** — each cell prints sequentially with a header label, so piped output stays readable.
+
+### Lifecycle — the one thing to know
+
+Between `start()` and `stop()`, Layout **owns the terminal**. It enters the alt-screen buffer (same as `pager`), hides the cursor, and installs a `SIGWINCH` handler. Everything it renders goes onto that alt-screen, not your scrollback — so the moment you call `stop()` the screen jumps back to exactly what it looked like before, as if Layout never ran.
+
+```js
+lo.start();      // enter alt-screen · hide cursor · bind resize
+lo.set('…', …);  // set content (as many times as you want)
+lo.render();     // paint — call whenever content changes
+…
+lo.stop();       // exit alt-screen · show cursor · clean up
+```
+
+Rules:
+- Don't call `render()` without `start()` first (auto-starts, but you lose control of when the alt-screen enters).
+- **Ctrl+C is handled** — Lumi restores your terminal before exiting with code 130. You don't need your own `SIGINT` handler for cleanup.
+- For clean exits, you still need `stop()` — otherwise the alt-screen is only released by process termination.
+- `pager` and `Layout` both grab the alt-screen; don't nest them.
 
 ---
 

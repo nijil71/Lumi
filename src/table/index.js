@@ -37,11 +37,19 @@ export function table(data, options = {}) {
     return w;
   });
 
-  // Pad/align a cell value (no color applied here — color is applied by caller)
+  // Pad/align a cell value (no color applied here — color is applied by caller).
+  // When truncation kicks in we swap the default `…` tail for a colored `▸`
+  // so the user can *see* which cells were clipped without having to compare
+  // to the source data. The wedge renders in 1 column, same width as `…`.
   function alignCell(str, w, alignment) {
     const s = String(str ?? '');
     const vis = visibleLen(s);
-    const text = vis > w ? truncate(s, w) : s;
+    let text;
+    if (vis > w) {
+      text = truncate(s, w).replace(/…$/, `${colors.amber}▸${colors.r}`);
+    } else {
+      text = s;
+    }
     const vl = visibleLen(text);
     const spaces = Math.max(0, w - vl);
 

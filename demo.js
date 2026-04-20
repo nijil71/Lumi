@@ -18,26 +18,125 @@ import {
   Layout,
 } from './src/index.js';
 
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const slow = process.argv.includes('--slow');
 const fast = process.argv.includes('--fast');
-const pause = (ms) => fast ? sleep(Math.min(ms, 15)) : slow ? sleep(ms) : sleep(Math.min(ms, 70));
+
+// ─── Navigator ────────────────────────────────────────────────────────────
+//
+// Lightweight state machine that tracks where we are in the run and listens
+// for Space / → / q during cinematic sections. Skipping is cooperative: a
+// section only notices by virtue of pause() returning instantly — we never
+// throw or yank execution out from under a section mid-render.
+
+const navigator = {
+  sections:  [],
+  index:     0,
+  state:     'running',       // 'running' | 'skip' | 'quit'
+  active:    false,
+  _waiters:  [],
+  _listener: null,
+
+  begin(sections) {
+    this.sections = sections;
+    this.index    = 0;
+    this.state    = 'running';
+    this.attach();
+  },
+
+  attach() {
+    if (!process.stdin.isTTY || this._listener) return;
+    this._listener = (buf) => {
+      const s = String(buf);
+      if (s === '\x03')                    { this._trigger('quit'); return; }  // Ctrl+C
+      if (s === 'q' || s === 'Q')          { this._trigger('quit'); return; }
+      if (s === ' ' || s === '\x1b[C')     { this._trigger('skip'); return; }  // Space or →
+    };
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data', this._listener);
+    this.active = true;
+  },
+
+  detach() {
+    if (!this._listener) return;
+    process.stdin.removeListener('data', this._listener);
+    if (process.stdin.isTTY) process.stdin.setRawMode(false);
+    process.stdin.pause();
+    this._listener = null;
+    this.active    = false;
+  },
+
+  _trigger(newState) {
+    this.state = newState;
+    const ws = this._waiters; this._waiters = [];
+    for (const r of ws) r();
+  },
+
+  // Resolves when skip/quit fires, or immediately if already fired.
+  waitForSignal() {
+    if (this.state !== 'running') return Promise.resolve();
+    return new Promise(r => this._waiters.push(r));
+  },
+
+  shouldSkip() { return this.state === 'skip'; },
+  shouldQuit() { return this.state === 'quit'; },
+
+  position() {
+    const total = this.sections.length;
+    return total ? `${this.index + 1}/${total}` : '';
+  },
+
+  nextSection() {
+    if (this.state === 'skip') this.state = 'running';   // reset for next section
+    this.index++;
+  },
+
+  /** Forget we ever navigated — restores `[N/M]`/hint output to blank. */
+  reset() {
+    this.sections = [];
+    this.index    = 0;
+    this.state    = 'running';
+  },
+};
+
+/**
+ * Sleep that yields immediately when the user asks to skip or quit, and
+ * clears its own pending timer so a skipped section doesn't leave dangling
+ * setTimeouts that delay process exit. Every section's await points go
+ * through this, so pressing Space fast-forwards the *whole* current section.
+ */
+const sleep = async (ms) => {
+  if (navigator.state !== 'running') return;
+  let tid;
+  await Promise.race([
+    new Promise(r => { tid = setTimeout(r, ms); }),
+    navigator.waitForSignal(),
+  ]);
+  clearTimeout(tid);
+};
+
+/** `pause(ms)` is a speed-sensitive sleep: capped fast, uncapped --slow. */
+const pause = (ms) => sleep(fast ? Math.min(ms, 15) : slow ? ms : Math.min(ms, 70));
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
 async function typewriter(text, delay = 18) {
   for (const ch of text) {
     write(ch);
-    await sleep(fast ? 2 : delay);
+    await sleep(fast ? 2 : delay);   // sleep is skip-aware, so on skip this loop flushes the rest instantly
   }
   writeln();
 }
 
 function sectionDivider(label, gradientPreset = GRADIENTS.neon) {
   const w = Math.min(cols(), 88);
+  const pos  = navigator.position();
+  const tag  = pos ? `${c.d}[${pos}]${c.r}  ` : '';
+  const hint = navigator.active ? `  ${c.d}· space skip · q quit${c.r}` : '';
   writeln();
   writeln(gradient('━'.repeat(w), ...gradientPreset));
-  writeln(`  ${c.slate}${c.b}${label}${c.r}`);
+  writeln(`  ${tag}${c.slate}${c.b}${label}${c.r}${hint}`);
   writeln();
 }
 
@@ -241,10 +340,10 @@ async function demoMultiBar() {
   writeln();
 }
 
-// ─── Layout ───────────────────────────────────────────────────────────────
+// ─── Boxes ────────────────────────────────────────────────────────────────
 
 async function demoBoxes() {
-  sectionDivider('LAYOUT', GRADIENTS.ice);
+  sectionDivider('BOXES', GRADIENTS.ice);
   header('boxes', '6 border styles · title · footer · padding · align');
 
   box(
@@ -539,13 +638,16 @@ async function demoTasks() {
   await runner.run();
 }
 
-// ─── Pager ──────────────────────────────────────────────────────────────────
+// ─── Layout ─────────────────────────────────────────────────────────────────
 
 async function demoLayout() {
   sectionDivider('LAYOUT');
 
-  writeln(`${c.slate}Building a live dashboard from this wireframe:${c.r}`);
+  writeln(`${c.slate}Layout.sketch reads a wireframe and makes it live.${c.r}`);
   writeln();
+
+  // ─── Phase 1 · print the wireframe as plain source-looking text.
+  // The shape the *developer writes* — before anything parses it.
   const wireframe = [
     '  ╭──────────────────────────────────────────╮',
     '  │                  header                  │',
@@ -558,10 +660,25 @@ async function demoLayout() {
   ];
   for (const line of wireframe) writeln(`${c.graphite}${line}${c.r}`);
   writeln();
-  writeln(`${c.slate}Layout.sketch reads the drawing — border style, cell spans, track sizes — and renders.${c.r}`);
-  writeln(`${c.slate}Opening in 1.2s · runs for ~6s · Ctrl+C to exit early${c.r}`);
-  await sleep(1200);
+  writeln(`${c.d}  ↑ gray text above is what you'd type · watch it parse…${c.r}`);
+  await sleep(1500);
 
+  // ─── Phase 2 · walk back up the wireframe and repaint each row lavender.
+  // Uses relative cursor motion — no absolute addressing, so it works no
+  // matter where the cursor currently sits in the scrollback.
+  const LINES_BELOW = 2;   // the blank line + the hint we just printed
+  write(ansi.up(wireframe.length + LINES_BELOW));
+  for (const line of wireframe) {
+    write(ansi.clearLine() + `${c.lavender}${line}${c.r}\n`);
+    await sleep(50);       // 50ms × 8 rows ≈ 400ms total
+  }
+  // skip past the (now stale) hint line we wrote below the wireframe
+  write(ansi.down(LINES_BELOW));
+  writeln();
+  writeln(`${c.d}  ✓ parsed · border style = rounded · 2 rows × 2 cols · spans detected${c.r}`);
+  await sleep(500);
+
+  // ─── Phase 3 · enter the Layout's alt-screen and reveal cells top-down.
   const lo = Layout.sketch`
     ╭──────────────────────────────────────────────────────╮
     │                        header                        │
@@ -576,18 +693,32 @@ async function demoLayout() {
     ╰──────────────────────────────────────────────────────╯
   `;
   lo.start();
+  lo.render();             // empty frame first — just the border
+  await sleep(350);
 
+  lo.set('header', gradient('  LUMI.sketch → live grid · only changed lines repaint', ...GRADIENTS.neon));
+  lo.render();
+  await sleep(250);
+
+  lo.set('metrics', `  ${c.d}  loading metrics…${c.r}`);
+  lo.render();
+  await sleep(250);
+
+  lo.set('events', `  ${c.d}  waiting for events…${c.r}`);
+  lo.render();
+  await sleep(250);
+
+  lo.set('footer', `${c.d}  tip: each frame diffs against the last — zero flicker${c.r}`);
+  lo.render();
+  await sleep(450);
+
+  // ─── Phase 4 · go live.
   const cpu = Array.from({ length: 24 }, () => Math.random() * 100);
   const mem = Array.from({ length: 24 }, () => 40 + Math.random() * 40);
   const req = Array.from({ length: 24 }, () => Math.random() * 200);
   const events = [];
   const sources = ['api', 'db ', 'svc', 'web', 'job'];
   const verbs   = ['started', 'ok     ', 'retried', 'queued ', 'closed ', 'slow   '];
-
-  lo.set('header', () =>
-    gradient('  LUMI.sketch → live grid · only changed lines repaint', ...GRADIENTS.neon)
-  );
-  lo.set('footer', `${c.d}  tip: each frame diffs against the last — zero flicker${c.r}`);
 
   const tick = setInterval(() => {
     cpu.shift(); cpu.push(Math.random() * 100);
@@ -631,7 +762,7 @@ async function demoPager() {
   await pager(lines, { title: 'v1.0.7 System Logs' });
 }
 
-// ─── Closer ───────────────────────────────────────────────────────────────
+// ─── Closer (static) ──────────────────────────────────────────────────────
 
 async function closer() {
   const w = cols();
@@ -641,16 +772,6 @@ async function closer() {
   writeln();
 
   banner('DONE', { gradient: GRADIENTS.neon, align: 'center', gap: 2 });
-
-  const boxW = 46;
-  const boxIndent = ' '.repeat(Math.max(0, Math.floor((w - boxW) / 2)));
-  box(
-    [
-      `  ${c.sage}$${c.r}  ${c.chalk}npm install @nijil71/lumi-cli${c.r}`,
-      `  ${c.sage}$${c.r}  ${c.chalk}npx lumi demo${c.r}`,
-    ],
-    { border: 'thick', color: 'lavender', title: 'GET STARTED', padding: 1, width: boxW, indent: boxIndent }
-  );
   writeln();
 
   const url = 'github.com/nijil71/Lumi';
@@ -658,6 +779,98 @@ async function closer() {
   writeln(' '.repeat(center) + `${c.graphite}${url}${c.r}`);
   writeln();
   write(ansi.show());
+}
+
+// ─── Table of contents — one-screen overview shown before a full demo run.
+
+async function tableOfContents(sections) {
+  process.stdout.write('\x1bc');
+  write(ansi.hide());
+  writeln();
+  banner('LUMI', { gradient: GRADIENTS.neon, align: 'center', gap: 1 });
+  const w = cols();
+  const subtitle = 'terminal ui toolkit · demo tour';
+  writeln(' '.repeat(Math.max(0, Math.floor((w - subtitle.length) / 2))) +
+          `${c.slate}${subtitle}${c.r}`);
+  writeln();
+
+  const lines = [];
+  const colW   = 18;
+  const nameW  = Math.max(...sections.map(([n]) => n.length));
+  for (let i = 0; i < sections.length; i += 2) {
+    const a = sections[i];
+    const b = sections[i + 1];
+    const left  = `${c.d}${String(i + 1).padStart(2)}.${c.r}  ${c.chalk}${a[0].padEnd(nameW)}${c.r}`;
+    const right = b
+      ? `${c.d}${String(i + 2).padStart(2)}.${c.r}  ${c.chalk}${b[0].padEnd(nameW)}${c.r}`
+      : '';
+    lines.push(`${left}   ${right}`);
+  }
+  lines.push('');
+  lines.push(`${c.d}space  ${c.r}skip to next section`);
+  lines.push(`${c.d}q      ${c.r}quit the demo`);
+
+  const boxWidth = Math.min(w - 4, 72);
+  box(lines, {
+    border: 'rounded', color: 'lavender',
+    title:  'tour · ' + sections.length + ' sections',
+    padding: 1, width: boxWidth, align: 'left',
+  });
+  writeln();
+
+  // Short auto-start countdown so the user has time to read or press q.
+  // Uses sleep() directly (not pause) so --fast doesn't collapse it to 45ms.
+  for (let n = 3; n > 0; n--) {
+    if (navigator.shouldQuit()) return;
+    const msg = `${c.d}starting in ${n}…${c.r}`;
+    write(ansi.clearLine() + ' '.repeat(Math.max(0, Math.floor((w - visibleLen(msg)) / 2))) + msg + '\r');
+    await sleep(700);
+  }
+  write(ansi.clearLine() + '\n');
+  write(ansi.show());
+}
+
+// ─── End menu — replaces the dead-end closer with a pick-next-action screen.
+
+async function endMenu() {
+  // Skip interactive prompt in non-TTY — returning any default and recursing
+  // into runDemo() would loop forever with no user to answer.
+  if (!process.stdin.isTTY) return;
+
+  writeln();
+  const choice = await select('what next?', [
+    { label: 'Run it again',                      value: 'again'  },
+    { label: 'Explore the layout demo',           value: 'layout' },
+    { label: 'Show the install command',          value: 'install'},
+    { label: 'Open on GitHub',                    value: 'github' },
+    { label: 'Quit',                              value: 'quit'   },
+  ], { default: 'quit' });
+
+  switch (choice) {
+    case 'again':
+      process.stdout.write('\x1bc');
+      return runDemo();
+    case 'layout':
+      await SECTIONS.layout();
+      return;
+    case 'install': {
+      writeln();
+      box(
+        [`  ${c.sage}$${c.r}  ${c.chalk}npm install @nijil71/lumi-cli${c.r}`],
+        { border: 'thick', color: 'lavender', title: 'INSTALL', padding: 1, width: 46 }
+      );
+      writeln();
+      return;
+    }
+    case 'github':
+      writeln();
+      writeln(`  ${ansi.link(`${c.azure}github.com/nijil71/Lumi${c.r}`, 'https://github.com/nijil71/Lumi')}`);
+      writeln();
+      return;
+    case 'quit':
+    default:
+      return;
+  }
 }
 
 // ─── Section registry ─────────────────────────────────────────────────────
@@ -689,7 +902,23 @@ const SECTIONS = {
 
 // ─── Main ─────────────────────────────────────────────────────────────────
 
-async function demo() {
+// Sections that take over the terminal (alt-screen / raw stdin). The
+// navigator's key listener must detach around these so they get clean stdin.
+const INTERACTIVE = new Set(['prompts', 'advancedprompts', 'pager', 'layout']);
+
+async function runSection(name, fn) {
+  if (navigator.shouldQuit()) return;
+  const wasActive = navigator.active;
+  if (INTERACTIVE.has(name) && wasActive) navigator.detach();
+  try {
+    await fn();
+  } finally {
+    if (INTERACTIVE.has(name) && wasActive) navigator.attach();
+    navigator.nextSection();
+  }
+}
+
+async function runDemo() {
   const flags = ['--slow', '--fast'];
   const args = process.argv.slice(2).filter(a => !flags.includes(a));
   const requested = args.filter(a => SECTIONS[a]);
@@ -698,19 +927,48 @@ async function demo() {
   write(ansi.hide());
 
   if (requested.length > 0) {
-    // When running explicit sections, show() the cursor first if prompts section included
+    // Explicit section(s) → run them as-is, no TOC, no navigator, no end menu.
     for (const name of requested) await SECTIONS[name]();
-  } else {
-    // Auto-run excludes interactive / alt-screen sections
-    const excludes = ['prompts', 'advancedprompts', 'pager', 'layout'];
-    const autoSections = Object.entries(SECTIONS).filter(([k]) => !excludes.includes(k));
-    for (const [, fn] of autoSections) await fn();
+    write(ansi.show());
+    return;
+  }
+
+  // Full tour. In a TTY we get TOC + nav chrome + end menu. In non-TTY
+  // (piped to a file, CI captures) we just run the sections linearly —
+  // otherwise a select() with no stdin would loop forever.
+  const tourSections = Object.entries(SECTIONS).filter(
+    ([k]) => !INTERACTIVE.has(k) && k !== 'closer'
+  );
+  const interactive = process.stdin.isTTY;
+
+  if (interactive) {
+    navigator.begin(tourSections);
+    await tableOfContents(tourSections);
+    if (navigator.shouldQuit()) { navigator.detach(); write(ansi.show()); return; }
+    // If user pressed Space during the countdown, treat it as "start now" —
+    // don't let that same press fast-skip the first section.
+    if (navigator.state === 'skip') navigator.state = 'running';
+    process.stdout.write('\x1bc');
+  }
+
+  for (const [name, fn] of tourSections) {
+    if (navigator.shouldQuit()) break;
+    await runSection(name, fn);
+  }
+
+  const quit = navigator.shouldQuit();
+  navigator.detach();
+  navigator.reset();   // so any post-tour section doesn't inherit stale [N/M]
+
+  if (!quit) {
+    await closer();
+    await endMenu();
   }
 
   write(ansi.show());
 }
 
-demo().catch(e => {
+runDemo().catch(e => {
   write(ansi.show());
   console.error(e);
   process.exit(1);

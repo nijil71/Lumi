@@ -183,6 +183,9 @@ export declare class MultiSpinner {
   stop(): void;
 }
 
+/** Factory shorthand matching `spinner()` style. */
+export declare function multiSpinner(): MultiSpinner;
+
 // ─── Progress ─────────────────────────────────────────────────────────────
 
 export type ProgressStyle = 'block' | 'shaded' | 'bracket' | 'thin' | 'brutalist' | 'dots';
@@ -219,6 +222,9 @@ export declare class MultiBar {
   tick(): this;
   stop(): void;
 }
+
+/** Factory shorthand matching `progressBar()` style. */
+export declare function multiBar(): MultiBar;
 
 // ─── Banner ───────────────────────────────────────────────────────────────
 
@@ -379,10 +385,26 @@ export declare function diff(oldText: string, newText: string, options?: DiffOpt
 
 // ─── StatusBar ────────────────────────────────────────────────────────────
 
+/** One piece of a styled, separator-joined StatusBar. */
+export interface StatusBarSegment {
+  /** Optional single-char glyph shown before the text (e.g. `⣿`). */
+  icon?: string;
+  text: string;
+  color?: ColorName;
+}
+
 export interface StatusBarOptions {
   left?: string;
   center?: string;
   right?: string;
+  /**
+   * Pipeline-style layout: `⣿ Building │ CPU 42% │ ETA 12s`.
+   * When provided, `segments` occupies the left slot and replaces any
+   * `left` string you pass. `center` and `right` still work independently.
+   */
+  segments?: StatusBarSegment[];
+  /** Custom separator between segments. Default: dim ` │ `. */
+  separator?: string;
 }
 
 /**
@@ -430,10 +452,14 @@ export declare function multiSelect(
   options?: MultiSelectOptions
 ): Promise<string[]>;
 
+/**
+ * Filterable choice picker. Returns the chosen value, or `null` if the
+ * user pressed Esc to cancel.
+ */
 export declare function autocomplete(
   message: string,
   choices: SelectChoice[]
-): Promise<string>;
+): Promise<string | null>;
 
 export interface InputOptions {
   default?: string;

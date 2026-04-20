@@ -6,10 +6,10 @@ export { ansi, c, write, writeln, cols, rows, stripAnsi, visibleLen, padEnd, tru
          isTTY, colorLevel, getColorTheme, gradient, GRADIENTS }
   from './ansi.js';
 
-export { Spinner, MultiSpinner, spinner, SPINNERS }
+export { Spinner, MultiSpinner, spinner, multiSpinner, SPINNERS }
   from './spinners/index.js';
 
-export { ProgressBar, MultiBar, progressBar }
+export { ProgressBar, MultiBar, progressBar, multiBar }
   from './progress/index.js';
 
 export { banner, divider, header, badge }

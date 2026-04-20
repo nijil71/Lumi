@@ -2,6 +2,22 @@
 
 import { write, writeln, ansi, c as colors, cols, visibleLen, isTTY, getColorTheme, registerCleanup } from '../ansi.js';
 
+/**
+ * Middle-ellipsis truncation — keeps both ends of a label visible.
+ *   `node_modules/foo/bar/baz.tar.gz` → `node_modul…tar.gz`
+ * Assumes a plain string (no embedded ANSI); progress labels are almost
+ * always plain paths or step names, which is where this is most useful.
+ */
+function truncateMiddle(str, width) {
+  const s = String(str);
+  if (visibleLen(s) <= width) return s;
+  if (width <= 1) return '…';
+  const keep  = width - 1;
+  const left  = Math.ceil(keep / 2);
+  const right = keep - left;
+  return s.slice(0, left) + '…' + (right > 0 ? s.slice(s.length - right) : '');
+}
+
 // ─── Progress bar styles ──────────────────────────────────────────────────
 
 const STYLES = {
@@ -29,11 +45,18 @@ const STYLES = {
 
 export class ProgressBar {
   constructor(options = {}) {
-    // total=0 means indeterminate; keep the user value so we can distinguish.
+    // total=0 means indeterminate; negative is a typo and deserves a loud error.
+    if (options.total !== undefined && (typeof options.total !== 'number' || options.total < 0 || !Number.isFinite(options.total))) {
+      throw new RangeError(`ProgressBar: total must be >= 0 (0 = indeterminate) — got ${options.total}`);
+    }
+    const styleName = options.style || 'block';
+    if (!STYLES[styleName]) {
+      throw new RangeError(`ProgressBar: unknown style "${styleName}" — expected one of ${Object.keys(STYLES).join(' | ')}`);
+    }
     this._indeterminate = options.total === 0;
     this._total   = this._indeterminate ? 1 : Math.max(1, options.total ?? 100);
     this._current = Math.max(0, options.current ?? 0);
-    this._style   = STYLES[options.style || 'block'];
+    this._style   = STYLES[styleName];
     this._width   = options.width   || null;
     this._label   = options.label   || '';
     this._color   = options.color   || 'azure';
@@ -50,9 +73,16 @@ export class ProgressBar {
     this._printedMilestones = new Set();
   }
 
+  _displayLabel() {
+    // Cap labels at 24 visible columns and middle-ellipsis longer ones so a
+    // path like `node_modules/foo/bar/baz.tar.gz` collapses to
+    // `node_modul…tar.gz` instead of eating half the terminal.
+    return this._label ? truncateMiddle(this._label, 24) : '';
+  }
+
   _barWidth() {
     const terminal = this._width || cols();
-    const labelLen = this._label ? visibleLen(this._label) + 1 : 0;
+    const labelLen = this._label ? visibleLen(this._displayLabel()) + 1 : 0;
     const pctLen   = 7;
     const numLen   = String(this._total).length * 2 + 3;
     const caps     = visibleLen(this._style.caps[0]) + visibleLen(this._style.caps[1]);
@@ -112,7 +142,7 @@ export class ProgressBar {
     const numStr     = this._indeterminate
       ? `${colors.slate}${this._current}${colors.r}`
       : `${colors.slate}${String(this._current).padStart(String(this._total).length)}/${this._total}${colors.r}`;
-    const label      = this._label ? `${colors.mist}${this._label}${colors.r} ` : '';
+    const label      = this._label ? `${colors.mist}${this._displayLabel()}${colors.r} ` : '';
 
     let suffix = '';
     if (this._showEta && !this._indeterminate && pct < 1) {
@@ -306,6 +336,11 @@ export class MultiBar {
 }
 
 // ─── Convenience factory ──────────────────────────────────────────────────
+
+/** Factory shorthand for MultiBar — matches `progressBar()` style. */
+export function multiBar() {
+  return new MultiBar();
+}
 
 export function progressBar(options) {
   return new ProgressBar(options);
