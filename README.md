@@ -15,6 +15,41 @@ Terminal UI toolkit for Node.js — spinners, progress bars, tables, boxes, bann
 [![node](https://img.shields.io/badge/node-%E2%89%A518-important?style=flat-square)](https://nodejs.org)
 [![license](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
+## Navigation
+
+- [See it in action](#see-it-in-action)
+- [Install](#install)
+- [Quick start](#quick-start)
+- [API shapes](#api-shapes-quick-rule)
+- [What's inside](#whats-inside)
+- [Spinners](#spinners)
+  - [Pet spinners 🐾](#pet-spinners-)
+- [Progress bars](#progress-bars)
+- [Boxes](#boxes)
+- [Table](#table)
+- [Banner](#banner)
+- [Gradient](#gradient)
+- [Logger](#logger)
+- [Colors & palette](#colors--palette)
+- [Terminal behavior](#terminal-behavior)
+- [Benchmarks](#benchmarks)
+- [Sparklines](#sparklines)
+- [Tree](#tree)
+- [Diff](#diff)
+- [StatusBar](#statusbar)
+- [Layout](#layout)
+  - [Sketch mode](#sketch-mode--the-layout-is-the-drawing)
+  - [Explicit mode](#explicit-mode--when-you-want-full-control)
+  - [Lifecycle](#lifecycle--the-one-thing-to-know)
+- [Prompts](#prompts)
+  - [confirm](#confirm)
+  - [select](#select)
+  - [input](#input)
+- [Hyperlinks](#hyperlinks)
+- [CLI](#cli)
+- [Why lumi-cli?](#why-lumi-cli-instead-of-chalk--ora--boxen)
+- [License](#license)
+
 ---
 
 ## See it in action
