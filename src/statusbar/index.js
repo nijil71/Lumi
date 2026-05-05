@@ -21,9 +21,11 @@ export class StatusBar {
     this._center   = options.center ?? '';
     this._right    = options.right  ?? '';
     this._segments = options.segments ?? null;
-    this._sep      = options.separator ?? `${colors.slate} │ ${colors.r}`;
+    // Enhanced separator with better visual weight and balance
+    this._sep      = options.separator ?? `${colors.slate}${colors.d} │ ${colors.r}`;
     this._bg       = colors.bgGraphite;
     this._fg       = colors.chalk;
+    this._style    = options.style ?? 'default'; // 'minimal' | 'compact' | 'default'
     this._unregister = null;
     this._rendered = false;
   }
@@ -46,13 +48,16 @@ export class StatusBar {
    * Compose segments into a styled string. Each segment:
    *   `{ icon?: string, text: string, color?: ColorName }`
    * Joined by `this._sep` (default dim ` │ `).
+   * Enhanced with visual indicators and better semantic styling.
    */
   _composeSegments() {
     if (!this._segments || this._segments.length === 0) return '';
-    const parts = this._segments.map((seg) => {
+    const parts = this._segments.map((seg, idx) => {
+      // Add visual markers: first segment gets a leading indicator, rest flow naturally
+      const marker = idx === 0 ? `${colors.lavender}▸${colors.r} ` : '';
       const prefix = seg.icon ? `${seg.icon} ` : '';
       const paint  = seg.color ? (s) => `${colors[seg.color] ?? ''}${s}${colors.r}` : (s) => s;
-      return paint(`${prefix}${seg.text}`);
+      return marker + paint(`${prefix}${seg.text}`);
     });
     return parts.join(this._sep);
   }

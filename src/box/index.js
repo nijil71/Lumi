@@ -149,6 +149,8 @@ export function box(content, options = {}) {
   const maxWidth   = options.width  || Math.min(cols(), 80);
   const align      = options.align  || 'left';
   const indentStr  = options.indent || '';
+  const glow       = options.glow || false;     // add subtle visual emphasis
+  const compact    = options.compact || false;  // reduce padding for dense layouts
   const innerWidth = Math.max(1, maxWidth - 2 - padding * 2);
 
   const lines = typeof content === 'string'
@@ -180,13 +182,15 @@ export function box(content, options = {}) {
     return line + ' '.repeat(spaces);
   }
 
-  // Top border
+  // Top border with enhanced visual design
   if (title) {
     // Truncate title if it's longer than the available border space
     const titleVis = visibleLen(title);
     const maxTitle = Math.max(0, w - 4);  // 2 for corners + at least 1 h on each side
     const shown = titleVis > maxTitle ? truncate(title, maxTitle) : title;
-    const t = ` ${shown} `;
+    // Add visual marker and spacing around title
+    const marker = `${colors.lavender}◆${colors.r}`;
+    const t = ` ${marker} ${shown} `;
     const tLen = visibleLen(t);
     const sideLen = Math.max(0, Math.floor((w - 2 - tLen) / 2));
     const r = Math.max(0, w - 2 - sideLen - tLen);
@@ -197,7 +201,9 @@ export function box(content, options = {}) {
       colorFn(border.h.repeat(r) + border.tr)
     );
   } else {
-    writeln(indentStr + colorFn(border.tl + border.h.repeat(Math.max(0, w - 2)) + border.tr));
+    // Decorative top border when no title
+    const decorator = glow ? `${colors.lavender}✦ ${colors.r}` : '';
+    writeln(indentStr + decorator + colorFn(border.tl + border.h.repeat(Math.max(0, w - 2)) + border.tr));
   }
 
   // Padding top (full padding rows, not halved)

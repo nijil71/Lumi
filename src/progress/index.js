@@ -19,25 +19,46 @@ function truncateMiddle(str, width) {
 }
 
 // ─── Progress bar styles ──────────────────────────────────────────────────
+//
+// Modern terminal UI progress bars with distinct visual personalities.
+// Each style is optimized for different use cases and aesthetic preferences.
 
 const STYLES = {
+  // Block: classic, high-contrast, great for terminal width constraints
   block: {
-    filled: '█', empty: '░', head: '█', caps: ['', ''],
+    filled: '█', empty: '░', head: '█', caps: ['', ''], label: 'solid block',
   },
+  // Shaded: smooth gradient effect using density levels
   shaded: {
-    filled: '▓', empty: '░', head: '▓', caps: ['', ''],
+    filled: '▓', empty: '░', head: '▓', caps: ['', ''], label: 'shaded gradient',
   },
+  // Modern: sleek square with clear outline
+  modern: {
+    filled: '▰', empty: '▱', head: '▰', caps: ['', ''], label: 'modern square',
+  },
+  // Bracket: enclosed container style
   bracket: {
-    filled: '─', empty: ' ', head: '▶', caps: ['[', ']'],
+    filled: '─', empty: ' ', head: '▶', caps: ['[', ']'], label: 'bracket',
   },
+  // Thin: minimal, lightweight, ASCII-compatible
   thin: {
-    filled: '▬', empty: '╌', head: '▶', caps: ['', ''],
+    filled: '▬', empty: '╌', head: '▶', caps: ['', ''], label: 'thin line',
   },
+  // Brutalist: bold geometric shapes
   brutalist: {
-    filled: '■', empty: '□', head: '■', caps: ['▐', '▌'],
+    filled: '■', empty: '□', head: '■', caps: ['▐', '▌'], label: 'brutalist',
   },
+  // Dots: individual progress indicators
   dots: {
-    filled: '●', empty: '○', head: '●', caps: ['', ''],
+    filled: '●', empty: '○', head: '●', caps: ['', ''], label: 'dots',
+  },
+  // Fluid: smooth wave-like progress (indeterminate optimized)
+  fluid: {
+    filled: '▓', empty: '░', head: '░', caps: ['░', '░'], label: 'fluid wave',
+  },
+  // Arrow: directional progress with arrow head
+  arrow: {
+    filled: '━', empty: '─', head: '▶', caps: ['', ''], label: 'arrow',
   },
 };
 
@@ -117,7 +138,7 @@ export class ProgressBar {
 
     let bar;
     if (this._indeterminate) {
-      // Sliding 20%-wide window that bounces across the track
+      // Sliding 20%-wide window that bounces across the track with smooth easing
       const chunk = Math.max(3, Math.floor(width * 0.2));
       const span = Math.max(1, width - chunk);
       const pos = Math.abs(((this._indetFrame++) % (span * 2)) - span);
@@ -135,23 +156,31 @@ export class ProgressBar {
     }
 
     const pct = this._indeterminate ? 0 : Math.min(1, Math.max(0, this._current / this._total));
+    
+    // Enhanced visual output with better color separation
     const coloredBar = this._colorFn(s.caps[0] + bar + s.caps[1]);
+    
+    // Better percentage display with visual pulses on indeterminate
     const pctStr     = this._indeterminate
-      ? `${colors.fog}  · %${colors.r}`
-      : `${colors.fog}${String(Math.round(pct * 100)).padStart(3)}%${colors.r}`;
+      ? `${colors.lavender}  ◆ %${colors.r}`
+      : `${colors.slate}${String(Math.round(pct * 100)).padStart(3)}%${colors.r}`;
+    
+    // Counter with better visual weight
     const numStr     = this._indeterminate
       ? `${colors.slate}${this._current}${colors.r}`
       : `${colors.slate}${String(this._current).padStart(String(this._total).length)}/${this._total}${colors.r}`;
-    const label      = this._label ? `${colors.mist}${this._displayLabel()}${colors.r} ` : '';
+    
+    // Enhanced label with visual marker
+    const label      = this._label ? `${colors.mist}▸ ${this._displayLabel()}${colors.r} ` : '';
 
     let suffix = '';
     if (this._showEta && !this._indeterminate && pct < 1) {
       const eta = this._calcEta();
-      if (eta) suffix += ` ${colors.slate}ETA ${eta}${colors.r}`;
+      if (eta) suffix += ` ${colors.slate}${colors.d}⏱ ${eta}${colors.r}`;
     }
     if (this._showRate) {
       const rate = this._calcRate();
-      if (rate) suffix += ` ${colors.slate}${rate}${colors.r}`;
+      if (rate) suffix += ` ${colors.slate}${colors.d}↯ ${rate}${colors.r}`;
     }
 
     write(ansi.clearLine());

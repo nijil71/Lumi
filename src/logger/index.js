@@ -3,12 +3,12 @@
 import { writeln, write, visibleLen, c as colors } from '../ansi.js';
 
 const LEVELS = {
-  info:    { symbol: 'ℹ', color: colors.azure,    label: 'info ' },
-  success: { symbol: '✔', color: colors.sage,     label: 'ok   ' },
-  warn:    { symbol: '⚠', color: colors.amber,    label: 'warn ' },
-  error:   { symbol: '✘', color: colors.signal,   label: 'error' },
-  debug:   { symbol: '◆', color: colors.lavender, label: 'debug' },
-  log:     { symbol: '·', color: colors.slate,    label: 'log  ' },
+  info:    { symbol: 'ℹ', icon: '◆', color: colors.azure,    label: 'info ', frame: '│' },
+  success: { symbol: '✔', icon: '◉', color: colors.sage,     label: 'ok   ', frame: '│' },
+  warn:    { symbol: '⚠', icon: '◈', color: colors.amber,    label: 'warn ', frame: '│' },
+  error:   { symbol: '✘', icon: '✦', color: colors.signal,   label: 'error', frame: '│' },
+  debug:   { symbol: '◆', icon: '▶', color: colors.lavender, label: 'debug', frame: '│' },
+  log:     { symbol: '·', icon: '▪', color: colors.slate,    label: 'log  ', frame: '│' },
 };
 
 function timestamp() {
@@ -41,28 +41,29 @@ class Logger {
   debug(...args)   { this._log('debug',   ...args); return this; }
   log(...args)     { this._log('log',     ...args); return this; }
 
-  // Step list — numbered sequence
+  // Step list — numbered sequence with modern visual design
   step(n, total, text) {
     const fraction = `${colors.slate}${n}/${total}${colors.r}`;
-    const bar = `${colors.graphite}${'─'.repeat(3)}${colors.r}`;
-    writeln(`  ${bar} ${fraction} ${colors.chalk}${text}${colors.r}`);
+    const progress = `${colors.azure}${'▪'.repeat(n)}${'░'.repeat(Math.max(0, total - n))}${colors.r}`;
+    const marker = `${colors.lavender}▸${colors.r}`;
+    writeln(`  ${marker} ${progress} ${fraction}  ${colors.chalk}${text}${colors.r}`);
     return this;
   }
 
-  // Key-value pair. Uses a dot leader (` · · · · `) instead of plain spaces
-  // when the gap between key and value is wide enough to be visually
-  // confusing — unix `df`-style — so your eye tracks the row cleanly.
+  // Key-value pair with improved visual hierarchy and grouping
+  // Uses dot leaders for alignment and semantic coloring
   kv(key, value, options = {}) {
     const kw  = options.keyWidth || 20;
-    const kv  = visibleLen(key);
-    const gap = Math.max(1, kw - kv);
-    // Threshold tuned so short keys ("PORT") skip the leader but longer
-    // left-pads ("NODE_ENV              3000") gain one.
+    const kvLen = visibleLen(key);
+    const gap = Math.max(1, kw - kvLen);
+    // Enhanced dot leader with better visual balance
     const filler = gap >= 6
       ? ' ' + `${colors.d}${'· '.repeat(Math.floor((gap - 2) / 2))}${colors.r}` +
         ' '.repeat((gap - 2) - Math.floor((gap - 2) / 2) * 2) + ' '
       : ' '.repeat(gap);
-    writeln(`  ${colors.slate}${key}${colors.r}${filler}${colors.chalk}${value}${colors.r}`);
+    // Improved styling with visual markers and better contrast
+    const bracket = `${colors.d}${colors.slate}│${colors.r}`;
+    writeln(`  ${bracket} ${colors.slate}${key}${colors.r}${filler}${colors.chalk}${value}${colors.r}`);
     return this;
   }
 

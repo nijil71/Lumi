@@ -97,12 +97,13 @@ export class Spinner {
 
   _render() {
     const frame   = this._def.frames[this._frame % this._def.frames.length];
-    const prefix  = this._prefix ? `${colors.slate}${colors.b}${this._prefix}${colors.r} ` : '';
+    // Enhanced prefix with visual context indicator
+    const prefix  = this._prefix ? `${colors.lavender}▸${colors.r} ${colors.slate}${colors.b}${this._prefix}${colors.r} ` : '';
     let text    = this._text   ? ` ${colors.fog}${this._text}${colors.r}` : '';
 
     if (this._elapsed && this._startMs) {
       const elapsed = Date.now() - this._startMs;
-      text += ` ${colors.slate}${formatElapsed(elapsed)}${colors.r}`;
+      text += ` ${colors.slate}${colors.d}${formatElapsed(elapsed)}${colors.r}`;
     }
 
     if (this._multiLine) {
@@ -111,9 +112,11 @@ export class Spinner {
       }
       const lines = frame.split('\n');
       for (let i = 0; i < lines.length; i++) {
-        write(ansi.clearLine() + `  ${this._colorFn(lines[i])}` + '\n');
+        // Add visual frame around multi-line spinners
+        write(ansi.clearLine() + `  ${colors.d}${colors.slate}│${colors.r} ${this._colorFn(lines[i])}` + '\n');
       }
-      write(ansi.clearLine() + `${prefix}${colors.fog}⠿${colors.r}${text}`);
+      // Use modern spinner indicator instead of braille
+      write(ansi.clearLine() + `${prefix}${this._colorFn('◆')}${text}`);
       this._renderedLines = lines.length;
     } else {
       const spinner = this._colorFn(frame);
@@ -149,10 +152,10 @@ export class Spinner {
   setText(t)     { this._text = t; return this; }
   setColor(name) { this._colorFn = getColorTheme(name); return this; }
 
-  succeed(text) { this._stop(`${colors.sage}✔${colors.r}`,   text || this._text); }
-  fail(text)    { this._stop(`${colors.signal}✘${colors.r}`, text || this._text); }
-  warn(text)    { this._stop(`${colors.amber}⚠${colors.r}`,  text || this._text); }
-  info(text)    { this._stop(`${colors.azure}ℹ${colors.r}`,  text || this._text); }
+  succeed(text) { this._stop(`${colors.sage}✔${colors.r}`,   text || this._text); return this; }
+  fail(text)    { this._stop(`${colors.signal}✘${colors.r}`, text || this._text); return this; }
+  warn(text)    { this._stop(`${colors.amber}⚠${colors.r}`,  text || this._text); return this; }
+  info(text)    { this._stop(`${colors.azure}ℹ${colors.r}`,  text || this._text); return this; }
 
   _stop(symbol, text) {
     if (this._timer) { clearInterval(this._timer); this._timer = null; }

@@ -18,6 +18,8 @@ export function table(data, options = {}) {
   const alignOpts  = options.align   || {};   // { columnName: 'right' | 'center' | 'left' }
   const maxWidths  = options.maxWidth || {};   // { columnName: number }
   const zebra      = options.zebra !== false;  // zebra striping on by default
+  const highlight  = options.highlight || null; // { columnName: value } to highlight cells
+  const compact    = options.compact || false;  // reduce padding for dense tables
 
   // Whether the border style actually has cell separators. When it doesn't
   // (minimal border), corners are empty strings and we need a different
@@ -99,24 +101,35 @@ export function table(data, options = {}) {
 
   // ── Data rows ──
   //
-  // For zebra striping we apply `dim` to the whole row and use a less-bright
-  // fg (`mist`) on odd rows. The old code concatenated `dim` + `fog`, but a
-  // later color override (like `fog`) fully resets prior SGR flags, so the
-  // dim was silently discarded. Applying dim + a distinct fg correctly
-  // differentiates zebra rows.
+  // Enhanced row rendering with zebra striping, highlighting, and visual
+  // indicators. Each row gets semantic coloring based on content and position.
   for (let ri = 0; ri < data.length; ri++) {
     const row    = data[ri];
     const isOdd  = ri % 2 === 1;
     const rowDim = (zebra && isOdd) ? colors.d : '';
     const rowFg  = (zebra && isOdd) ? colors.mist : colors.fog;
+    
+    // Add visual row indicator for important rows
+    const rowMarker = highlight && highlight.columnName && row[highlight.columnName] === highlight.value
+      ? `${colors.sage}◆${colors.r}`
+      : ' ';
 
     const cells = headers.map((h, ci) => {
       const val = row[h] !== undefined ? String(row[h]) : '';
       const alignment = alignOpts[h] || 'left';
       const aligned = alignCell(val, colWidths[ci], alignment);
-      return ` ${rowDim}${rowFg}${aligned}${colors.r} `;
+      
+      // Apply highlighting to specific cells
+      const isHighlighted = highlight && h === highlight.columnName && val === String(highlight.value);
+      const cellColor = isHighlighted
+        ? `${colors.sage}${colors.b}`
+        : `${rowDim}${rowFg}`;
+      
+      return ` ${cellColor}${aligned}${colors.r} `;
     });
-    writeln(colorFn(v) + cells.join(colorFn(v)) + colorFn(v));
+    
+    const cellsStr = cells.join(colorFn(v));
+    writeln(colorFn(v) + rowMarker + cellsStr + colorFn(v));
   }
 
   // ── Bottom border ──
