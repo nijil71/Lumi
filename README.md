@@ -774,5 +774,51 @@ npx lumi --help
 
 ---
 
+## Design & Visual Philosophy
+
+Lumi follows modern CLI design principles to create beautiful, usable terminal experiences:
+
+### Color Palette — 7 Semantic Colors
+The toolkit uses a carefully curated palette for consistent visual communication:
+- **chalk** — Default text, labels, and neutral content
+- **signal** — Errors, critical alerts, destructive actions
+- **sage** — Success states, affirmative actions, positive feedback
+- **azure** — Information, links, highlights, active states
+- **amber** — Warnings, caution, attention needed
+- **lavender** — Accents, decorative elements, secondary highlights
+- **dim** — Muted text, disabled states, secondary information
+
+### Visual Hierarchy
+- **Typography:** Consistent sizing using fixed character widths creates predictable layouts
+- **Spacing:** Breathing room between sections improves readability — use dividers and padding
+- **Borders:** 6 distinct border styles (`single`, `double`, `rounded`, `thick`, `dashed`, `ascii`) for different contexts
+- **Icons & Symbols:** Semantic symbols (✔, ✘, ⚠, ℹ) convey status instantly
+
+### Best Practices for CLI UX
+1. **Progressive Disclosure** — Show essential info first, details on demand
+2. **Color + Symbol** — Never rely on color alone; combine with text or icons
+3. **Consistent State Feedback** — Spinners, progress bars, and status updates keep users informed
+4. **Readable Output** — Tables with alignment, boxes with clear boundaries, diffs with context
+5. **Interactive Feedback** — Prompts confirm user intent; animations provide motion feedback
+
+### Creating Professional CLI Experiences
+```js
+import { banner, box, table, Spinner, log, gradient, GRADIENTS } from '@nijil71/lumi-cli';
+
+// 1. Opener — captures attention
+banner('DEPLOY', { gradient: GRADIENTS.neon, align: 'center' });
+
+// 2. Progress — shows what's happening
+const sp = new Spinner({ type: 'wave', text: 'Building…', color: 'azure' });
+sp.start();
+// ... do work ...
+sp.succeed('Build complete');
+
+// 3. Result — clear outcome
+box('✓ All systems nominal', { border: 'rounded', color: 'sage' });
+```
+
+---
+
 ## License
 This project is licensed under the [MIT License](LICENSE).

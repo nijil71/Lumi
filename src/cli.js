@@ -83,34 +83,43 @@ async function printHelp(version) {
 
   // ─── banner + metadata strip ─────────────────────────────────────────
   writeln();
+  writeln();
+  
+  // Decorative top border
+  const topBorder = gradient('✦ '.repeat(Math.floor(Math.min(w, 50) / 2)), ...GRADIENTS.neon);
+  const topPad = ' '.repeat(Math.max(0, Math.floor((w - visibleLen(stripAnsi(topBorder))) / 2)));
+  writeln(topPad + topBorder);
+  writeln();
+  
   banner('LUMI', { gradient: GRADIENTS.neon, align: 'center', gap: 1 });
-  writeln(centered(`${c.slate}terminal ui toolkit · v${version}${c.r}`));
+  writeln(centered(`${c.lavender}${c.b}Terminal UI Toolkit${c.r}`));
+  writeln(centered(`${c.slate}v${version}${c.r}`));
 
   const size = await getBundleSize();
   const meta = [size, '0 dependencies', 'node ≥18'].filter(Boolean).join(' · ');
   writeln(centered(`${c.d}${meta}${c.r}`));
   writeln();
-  writeln(centered(gradient('─'.repeat(Math.min(40, w - 4)), ...GRADIENTS.neon)));
+  writeln(centered(gradient('━'.repeat(Math.min(40, w - 4)), ...GRADIENTS.neon)));
 
   // ─── command groups ──────────────────────────────────────────────────
   const thumbW = Math.max(...[...BROWSE, ...INTERACTIVE].map(([t]) => visibleLen(t)));
   const cmdW   = Math.max(...[...BROWSE, ...INTERACTIVE].map(([, k]) => visibleLen(k)));
 
-  sectionHeader('BROWSE');
+  sectionHeader('BROWSE COMPONENTS');
   for (const [thumb, cmd, desc] of BROWSE) renderRow(thumb, cmd, desc, thumbW, cmdW);
 
-  sectionHeader('INTERACTIVE');
-  writeln(`  ${c.d}takes over the terminal · Ctrl+C or q to exit${c.r}`);
+  sectionHeader('INTERACTIVE DEMOS');
+  writeln(`  ${c.d}⚡ Takes over the terminal · Ctrl+C or q to exit${c.r}`);
   writeln();
   for (const [thumb, cmd, desc] of INTERACTIVE) renderRow(thumb, cmd, desc, thumbW, cmdW);
 
-  sectionHeader('MODIFIERS');
+  sectionHeader('OPTIONS');
   const modW = Math.max(...MODIFIERS.map(([k]) => visibleLen(k)));
   for (const [flag, desc] of MODIFIERS) {
     writeln(`  ${c.lavender}${padVis(flag, modW)}${c.r}  ${c.slate}${desc}${c.r}`);
   }
 
-  sectionHeader('INFO');
+  sectionHeader('HELP');
   const infoW = Math.max(...INFO.map(([k]) => visibleLen(k)));
   for (const [flag, desc] of INFO) {
     writeln(`  ${c.lavender}${padVis(flag, infoW)}${c.r}  ${c.slate}${desc}${c.r}`);
@@ -120,11 +129,17 @@ async function printHelp(version) {
   writeln();
   writeln();
   const cta = 'npx lumi demo';
-  const arrow = '  ❯  ';
-  const line = `${c.d}${arrow}${c.r}${gradient(cta, ...GRADIENTS.neon)}${c.d}  ← start here${c.r}`;
-  const visible = visibleLen(stripAnsi(arrow + cta + '  ← start here'));
+  const arrow = '  ▸  ';
+  const line = `${c.d}${arrow}${c.r}${gradient(cta, ...GRADIENTS.neon)}${c.d}  — get started${c.r}`;
+  const visible = visibleLen(stripAnsi(arrow + cta + '  — get started'));
   const pad = Math.max(0, Math.floor((w - visible) / 2));
   writeln(' '.repeat(pad) + line);
+  writeln();
+  
+  // Decorative bottom border
+  const bottomBorder = gradient('✦ '.repeat(Math.floor(Math.min(w, 50) / 2)), ...GRADIENTS.neon);
+  const bottomPad = ' '.repeat(Math.max(0, Math.floor((w - visibleLen(stripAnsi(bottomBorder))) / 2)));
+  writeln(bottomPad + bottomBorder);
   writeln();
 
   if (compact) {

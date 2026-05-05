@@ -8,7 +8,7 @@ import {
   Spinner, MultiSpinner, SPINNERS,
   ProgressBar, MultiBar,
   log, createLogger,
-  c, ansi, writeln, write, cols, visibleLen,
+  c, ansi, writeln, write, cols, visibleLen, stripAnsi,
   gradient, GRADIENTS,
   sparkline,
   tree,
@@ -135,8 +135,10 @@ function sectionDivider(label, gradientPreset = GRADIENTS.neon) {
   const tag  = pos ? `${c.d}[${pos}]${c.r}  ` : '';
   const hint = navigator.active ? `  ${c.d}· space skip · q quit${c.r}` : '';
   writeln();
+  writeln();
   writeln(gradient('━'.repeat(w), ...gradientPreset));
-  writeln(`  ${tag}${c.slate}${c.b}${label}${c.r}${hint}`);
+  writeln(`  ${c.lavender}▸${c.r} ${tag}${c.b}${label}${c.r}${hint}`);
+  writeln(gradient('━'.repeat(w), ...gradientPreset));
   writeln();
 }
 
@@ -147,17 +149,27 @@ async function splash() {
   write(ansi.hide());
   await sleep(fast ? 20 : 100);
 
+  const w = cols();
+  
+  // Decorative top border
+  const borderW = Math.min(w, 50);
+  const topBorder = gradient('✦ '.repeat(Math.floor(borderW / 2)), ...GRADIENTS.neon);
+  const topPad = ' '.repeat(Math.max(0, Math.floor((w - visibleLen(stripAnsi(topBorder))) / 2)));
+  writeln();
+  writeln(topPad + topBorder);
+  writeln();
+
   banner('LUMI', { gradient: GRADIENTS.neon, align: 'center', char: '█', gap: 2 });
 
-  const w = cols();
-  const label = 'terminal ui · zero deps';
+  const label = 'terminal ui toolkit · zero dependencies';
   const tw = ' '.repeat(Math.max(0, Math.floor((w - visibleLen(label)) / 2)));
-  write(`${tw}${c.slate}`);
-  await typewriter(label, fast ? 3 : 20);
+  write(`${tw}${c.lavender}`);
+  await typewriter(label, fast ? 3 : 15);
+  writeln();
   writeln();
 
   const stats = [
-    badge('30 KB', { type: 'default' }),
+    badge('~30 KB', { type: 'default' }),
     badge('0 deps', { type: 'success' }),
     badge('Node ≥18', { type: 'info' }),
     badge('MIT', { type: 'default' }),
@@ -167,13 +179,20 @@ async function splash() {
   const sw = ' '.repeat(Math.max(0, Math.floor((w - visibleLen(statsStr)) / 2)));
   writeln(sw + statsStr);
   writeln();
+
+  // Decorative bottom border
+  const bottomBorder = gradient('✦ '.repeat(Math.floor(borderW / 2)), ...GRADIENTS.neon);
+  const bottomPad = ' '.repeat(Math.max(0, Math.floor((w - visibleLen(stripAnsi(bottomBorder))) / 2)));
+  writeln(bottomPad + bottomBorder);
+  writeln();
+  
   await pause(280);
 }
 
 // ─── Logger ───────────────────────────────────────────────────────────────
 
 async function demoLogger() {
-  sectionDivider('LOGGER');
+  sectionDivider('LOGGER', GRADIENTS.azure);
   header('log levels', 'structured output with consistent palette');
 
   const syslog = createLogger({ prefix: 'sys', timestamps: true });
@@ -210,7 +229,7 @@ async function demoLogger() {
 // ─── Spinners ─────────────────────────────────────────────────────────────
 
 async function demoSpinners() {
-  sectionDivider('SPINNERS', GRADIENTS.fire);
+  sectionDivider('SPINNERS', GRADIENTS.neon);
   header('25 animation types', 'every frame hand-crafted — including 11 action and multi-line pets');
 
   const types = [
