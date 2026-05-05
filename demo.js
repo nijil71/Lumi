@@ -313,15 +313,18 @@ async function demoMultiSpinner() {
 
 async function demoProgress() {
   sectionDivider('PROGRESS BARS', GRADIENTS.ocean);
-  header('6 bar styles', 'ETA + rate + live reflow on window resize');
+  header('9 bar styles', 'includes modern, fluid, and arrow styles with ETA + rate display');
 
   const styles = [
-    { style: 'block', color: 'chalk', label: 'block    ' },
-    { style: 'shaded', color: 'azure', label: 'shaded   ' },
-    { style: 'bracket', color: 'lavender', label: 'bracket  ' },
-    { style: 'thin', color: 'sage', label: 'thin     ' },
-    { style: 'brutalist', color: 'signal', label: 'brutalist' },
-    { style: 'dots', color: 'amber', label: 'dots     ' },
+    { style: 'block', color: 'chalk', label: 'block     ' },
+    { style: 'shaded', color: 'azure', label: 'shaded    ' },
+    { style: 'modern', color: 'lavender', label: 'modern    ' },
+    { style: 'bracket', color: 'sage', label: 'bracket   ' },
+    { style: 'thin', color: 'amber', label: 'thin      ' },
+    { style: 'brutalist', color: 'signal', label: 'brutalist ' },
+    { style: 'dots', color: 'azure', label: 'dots      ' },
+    { style: 'fluid', color: 'lavender', label: 'fluid     ' },
+    { style: 'arrow', color: 'sage', label: 'arrow     ' },
   ];
 
   for (const def of styles) {
@@ -392,14 +395,20 @@ async function demoBoxes() {
     { border: 'rounded', color: 'sage', padding: 2, width: 52, align: 'center' }
   );
   writeln();
+
+  box(
+    `${c.lavender}${c.b}Enhanced Box Design${c.r}\n\n${c.fog}New glow effect for emphasis and modern title decorations with visual markers.${c.r}`,
+    { border: 'rounded', color: 'lavender', title: '✨ SHOWCASE', padding: 2, width: 56, glow: true }
+  );
+  writeln();
 }
 
 async function demoColumns() {
   header('columns', 'multi-column layouts');
 
   columns([
-    { content: [`${c.lavender}${c.b}spinners${c.r}`, `${c.fog}20 types${c.r}`, `${c.fog}single + multi${c.r}`, `${c.fog}promise helper${c.r}`] },
-    { content: [`${c.azure}${c.b}progress${c.r}`, `${c.fog}6 styles${c.r}`, `${c.fog}single + multi${c.r}`, `${c.fog}ETA + rate${c.r}`] },
+    { content: [`${c.lavender}${c.b}spinners${c.r}`, `${c.fog}25 types${c.r}`, `${c.fog}single + multi${c.r}`, `${c.fog}promise helper${c.r}`] },
+    { content: [`${c.azure}${c.b}progress${c.r}`, `${c.fog}9 styles${c.r}`, `${c.fog}single + multi${c.r}`, `${c.fog}ETA + rate${c.r}`] },
     { content: [`${c.sage}${c.b}layout${c.r}`, `${c.fog}box, columns${c.r}`, `${c.fog}table, banner${c.r}`, `${c.fog}divider, badge${c.r}`] },
     { content: [`${c.amber}${c.b}logger${c.r}`, `${c.fog}6 log levels${c.r}`, `${c.fog}kv + step${c.r}`, `${c.fog}prefix + ts${c.r}`] },
   ], { gap: 4 });
@@ -410,16 +419,22 @@ async function demoColumns() {
 
 async function demoTable() {
   sectionDivider('TABLE', GRADIENTS.sunset);
-  header('table', '4 border styles · per-column align · cell truncation');
+  header('table', '4 border styles · per-column align · cell truncation · row highlighting');
 
-  table([
+  const data = [
     { package: 'lumi-cli', version: '1.0.0', size: '~30 KB', deps: 0, license: 'MIT' },
     { package: 'chalk', version: '5.3.0', size: '8.2 KB', deps: 0, license: 'MIT' },
     { package: 'ora', version: '8.1.0', size: '11 KB', deps: 5, license: 'MIT' },
     { package: 'cli-progress', version: '3.12.0', size: '18 KB', deps: 1, license: 'MIT' },
     { package: 'boxen', version: '7.1.1', size: '22 KB', deps: 9, license: 'MIT' },
     { package: 'figlet', version: '1.7.0', size: '2.8 MB', deps: 0, license: 'MIT' },
-  ], { border: 'single', align: { deps: 'right', size: 'right' } });
+  ];
+  
+  table(data, {
+    border: 'single',
+    align: { deps: 'right', size: 'right' },
+    highlight: { columnName: 'deps', value: '0' }
+  });
   writeln();
 }
 
@@ -546,9 +561,14 @@ app.listen(PORT, () => {
 
 async function demoStatusBar() {
   sectionDivider('STATUS BAR', GRADIENTS.dawn);
-  header('StatusBar', 'persistent status line pinned to bottom row — never interrupts output');
+  header('StatusBar', 'persistent status line with segments — never interrupts output');
 
-  const bar = new StatusBar({ left: '', right: '' });
+  const bar = new StatusBar({
+    segments: [
+      { icon: '⚡', text: 'Build', color: 'azure' },
+      { icon: '📦', text: 'Package', color: 'lavender' },
+    ]
+  });
 
   const steps = [
     'Fetching dependencies…',
